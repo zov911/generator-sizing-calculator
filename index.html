@@ -3,785 +3,1193 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generator Power Calculator</title>
+<title>Generator Sizing Calculator — Industrial &amp; Commercial Power</title>
+<meta name="description" content="Size a standby or prime generator in minutes: load builder with motor-starting kVA, altitude and temperature derating, wet-stacking checks, fuel burn and industry-specific code guidance. Built by zov911.">
+<meta name="author" content="zov911">
+<meta property="og:title" content="Generator Sizing Calculator — Industrial & Commercial Power">
+<meta property="og:description" content="Load builder, motor starting, derating, fuel burn and code guidance for 12 industries, from farms to AI data centers.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f0a500'/%3E%3Cpath d='M18 4L8 18h7l-2 10 10-14h-7z' fill='%230d1117'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-/* ===== VARIABLES & RESET ===== */
 :root {
-  --bg:       #0d1117;
-  --surface:  #161b22;
-  --elevated: #21262d;
-  --border:   #30363d;
-  --amber:    #f0a500;
-  --amber-d:  rgba(240,165,0,.13);
-  --green:    #3fb950;
-  --green-d:  rgba(63,185,80,.12);
-  --red:      #f85149;
-  --red-d:    rgba(248,81,73,.10);
-  --blue:     #58a6ff;
-  --blue-d:   rgba(88,166,255,.10);
-  --yellow:   #e3b341;
-  --yellow-d: rgba(227,179,65,.10);
-  --text:     #e6edf3;
-  --muted:    #8b949e;
-  --dim:      #484f58;
-  --r:        8px;
-  --rlg:      12px;
+  --bg:#0d1117; --surface:#161b22; --elevated:#21262d; --border:#30363d;
+  --amber:#f0a500; --amber-d:rgba(240,165,0,.13);
+  --green:#3fb950; --green-d:rgba(63,185,80,.12);
+  --red:#f85149; --red-d:rgba(248,81,73,.10);
+  --blue:#58a6ff; --blue-d:rgba(88,166,255,.10);
+  --yellow:#e3b341; --yellow-d:rgba(227,179,65,.10);
+  --text:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+  --r:8px; --rlg:12px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:16px;-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;line-height:1.5}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar{width:4px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--surface)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
 /* ===== HEADER ===== */
-.hdr{
-  background:var(--surface);border-bottom:1px solid var(--border);
-  padding:12px 18px;display:flex;align-items:center;gap:12px;
-  position:sticky;top:0;z-index:100;
-}
-.hdr-logo{
-  width:38px;height:38px;background:var(--amber);border-radius:var(--r);
-  display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;
-}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.hdr-logo{width:38px;height:38px;background:var(--amber);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
 .hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;line-height:1.1}
 .hdr-sub{font-size:11px;color:var(--muted);margin-top:1px}
-.hdr-badge{
-  margin-left:auto;background:var(--amber-d);color:var(--amber);
-  border:1px solid rgba(240,165,0,.25);padding:4px 10px;border-radius:20px;
-  font-size:10px;font-weight:700;letter-spacing:1px;white-space:nowrap;flex-shrink:0;
-}
+.hdr-ctrls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:flex;background:var(--elevated);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.seg button{border:none;background:transparent;color:var(--muted);padding:5px 12px;font-size:11px;font-weight:700;letter-spacing:.6px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase}
+.seg button[aria-pressed="true"]{background:var(--amber);color:#000}
 
 /* ===== LAYOUT ===== */
-.app{display:grid;grid-template-columns:360px 1fr}
+.app{display:grid;grid-template-columns:380px 1fr}
+@media(max-width:900px){.app{grid-template-columns:1fr}}
+.left{background:var(--surface);border-right:1px solid var(--border);padding:20px 18px;overflow-y:auto;height:calc(100vh - 59px);position:sticky;top:59px}
+.right{padding:20px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+@media(max-width:900px){.left{height:auto;position:static;border-right:none;border-bottom:1px solid var(--border)}}
 
-@media(max-width:860px){
-  .app{grid-template-columns:1fr}
-}
+.lbl{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.lbl-step{width:18px;height:18px;background:var(--amber);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
 
-.left{
-  background:var(--surface);border-right:1px solid var(--border);
-  padding:20px 18px;overflow-y:auto;
-  height:calc(100vh - 63px);position:sticky;top:63px;
-}
-.right{
-  padding:20px 18px;display:flex;flex-direction:column;gap:14px;
-  min-height:calc(100vh - 63px);
-}
-
-@media(max-width:860px){
-  .left{height:auto;position:static}
-  .right{min-height:auto}
-}
-
-/* ===== LABELS ===== */
-.lbl{
-  display:flex;align-items:center;gap:8px;
-  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;
-}
-.lbl-step{
-  width:18px;height:18px;background:var(--amber);color:#000;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;
-}
-
-/* ===== INDUSTRY GRID ===== */
-.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:26px}
-.ind-btn{
-  background:var(--elevated);border:1.5px solid var(--border);border-radius:var(--r);
-  padding:11px 5px 9px;cursor:pointer;transition:border-color .18s,background .18s,color .18s;
-  text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;
-  color:var(--muted);font-size:11px;font-weight:600;font-family:'Barlow',sans-serif;
-  line-height:1.2;user-select:none;
-}
-.ind-icon{font-size:21px;display:block}
+/* Industry grid */
+.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:24px}
+.ind-btn{background:var(--elevated);border:1.5px solid var(--border);border-radius:var(--r);padding:10px 4px 8px;cursor:pointer;transition:border-color .18s,background .18s,color .18s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-size:11px;font-weight:600;line-height:1.15;user-select:none;position:relative}
+.ind-icon{font-size:20px;display:block}
 .ind-btn:hover{border-color:rgba(240,165,0,.5);color:var(--text);background:rgba(240,165,0,.05)}
-.ind-btn.active{background:var(--amber-d);border-color:var(--amber);color:var(--amber)}
+.ind-btn[aria-pressed="true"]{background:var(--amber-d);border-color:var(--amber);color:var(--amber)}
+.ind-new{position:absolute;top:3px;right:4px;font-size:8px;font-weight:800;color:var(--blue);letter-spacing:.5px}
 
-/* ===== POWER SECTION ===== */
-.power-val{display:flex;align-items:baseline;gap:4px;margin-bottom:16px}
-.power-num{
-  font-family:'JetBrains Mono',monospace;font-size:58px;font-weight:700;
-  color:var(--amber);line-height:1;transition:color .2s;
-}
+/* Mode tabs */
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:3px;margin-bottom:16px}
+.tabs button{border:none;background:transparent;color:var(--muted);padding:8px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--text);box-shadow:0 0 0 1px var(--border)}
+
+/* Quick mode */
+.power-val{display:flex;align-items:baseline;gap:6px;margin-bottom:14px}
+.power-num{font-family:'JetBrains Mono',monospace;font-size:54px;font-weight:700;color:var(--amber);line-height:1}
 .power-unit{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:600;color:var(--muted)}
-
-@keyframes pop{0%{transform:scale(1.12)}100%{transform:scale(1)}}
+.power-kva{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);margin-left:4px}
+@keyframes pop{0%{transform:scale(1.1)}100%{transform:scale(1)}}
 .power-num.pop{animation:pop .15s ease-out}
-
-/* Custom Range Input */
-input[type="range"]{
-  -webkit-appearance:none;width:100%;height:5px;
-  border-radius:3px;outline:none;cursor:pointer;border:none;
-}
-input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:22px;height:22px;background:var(--amber);
-  border-radius:50%;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--amber);
-  cursor:pointer;transition:transform .1s;
-}
-input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
-input[type="range"]::-moz-range-thumb{
-  width:22px;height:22px;background:var(--amber);border-radius:50%;
-  border:3px solid var(--bg);cursor:pointer;box-sizing:border-box;
-}
-.slider-ends{
-  display:flex;justify-content:space-between;margin-top:6px;
-  font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;
-}
-
-/* Band Bar */
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;outline:none;cursor:pointer;border:none;background:var(--border)}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;background:var(--amber);border-radius:50%;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--amber);cursor:pointer}
+input[type="range"]::-moz-range-thumb{width:22px;height:22px;background:var(--amber);border-radius:50%;border:3px solid var(--bg);cursor:pointer;box-sizing:border-box}
+.slider-ends{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .band-bar{display:flex;gap:3px;margin-top:14px;margin-bottom:5px}
 .band-seg{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s}
 .band-seg.on{background:var(--amber)}
-.band-text{font-size:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.3px}
+.band-text{font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.3px}
+.hint{font-size:12px;color:var(--muted);line-height:1.55;margin-top:14px;padding:10px 12px;background:var(--elevated);border-radius:var(--r);border:1px solid var(--border)}
+.hint a,.hint button.link{color:var(--amber);background:none;border:none;cursor:pointer;font-weight:600;text-decoration:underline;padding:0}
+
+/* Load builder */
+.load-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.load-row{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:7px 8px;transition:border-color .2s}
+.load-row.on{border-color:rgba(63,185,80,.5);background:linear-gradient(90deg,var(--green-d),transparent)}
+.load-ico{font-size:17px;text-align:center}
+.load-name{font-size:13px;font-weight:600;line-height:1.2}
+.load-spec{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)}
+.load-row.on .load-spec{color:var(--green)}
+.qty{display:flex;align-items:center;gap:2px}
+.qty button{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-weight:700;color:var(--muted)}
+.qty button:hover{border-color:var(--amber);color:var(--amber)}
+.qty output{min-width:22px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px}
+.custom-add{display:grid;grid-template-columns:1fr 70px 70px auto;gap:6px;margin-bottom:16px}
+.custom-add input,.custom-add select,.field input,.field select{background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:7px 8px;font-size:12px;min-width:0;width:100%}
+.custom-add button{background:var(--amber);color:#000;border:none;border-radius:6px;padding:0 10px;font-weight:700;cursor:pointer}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.field.full{grid-column:1/-1}
+.sub-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin:2px 0 8px}
 
 /* ===== CARDS ===== */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:18px}
-.card-lbl{
-  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;
-}
+.card-lbl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-lbl span{color:var(--dim);letter-spacing:.5px}
 
-/* ===== EQUIPMENT GRID ===== */
+/* Result hero */
+.result{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+@media(max-width:620px){.result{grid-template-columns:1fr}}
+.res-size{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:var(--amber);line-height:1}
+.res-size small{font-size:18px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:600;margin-left:4px}
+.res-kva{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);margin-top:6px}
+.res-rating{display:inline-block;margin-top:8px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:var(--blue-d);color:var(--blue);border:1px solid rgba(88,166,255,.3)}
+.lf-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+.lf-lbl b{color:var(--text);font-family:'JetBrains Mono',monospace}
+.lf-track{position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,rgba(248,81,73,.35) 0 30%,rgba(227,179,65,.25) 30% 50%,rgba(63,185,80,.35) 50% 80%,rgba(227,179,65,.25) 80% 100%);overflow:visible}
+.lf-mark{position:absolute;top:-4px;width:4px;height:20px;border-radius:2px;background:#fff;box-shadow:0 0 0 2px var(--bg);transition:left .35s ease;transform:translateX(-2px)}
+.lf-scale{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-top:6px}
+.lf-scale span{flex:1;text-align:center}
+.lf-note{font-size:12px;margin-top:10px;color:var(--muted);line-height:1.5}
+
+/* Breakdown */
+.bd{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:760px){.bd{grid-template-columns:repeat(2,1fr)}}
+.bd-item{background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.bd-k{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);font-weight:700}
+.bd-v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:2px}
+.bd-s{font-size:11px;color:var(--muted);margin-top:1px}
+.formula{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:12px;line-height:1.7;background:var(--elevated);border-radius:var(--r);padding:10px 12px;overflow-x:auto;white-space:nowrap}
+
+/* Equipment grid */
 .eq-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 @media(max-width:520px){.eq-grid{grid-template-columns:repeat(3,1fr)}}
-
-.eq-item{
-  background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);
-  padding:10px 5px 8px;text-align:center;transition:all .35s ease;opacity:.22;
-}
+.eq-item{background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:10px 5px 8px;text-align:center;transition:all .35s ease;opacity:.3}
 .eq-item.on{opacity:1;border-color:var(--green);background:var(--green-d)}
-
-@keyframes light-up{0%{transform:scale(.85);opacity:.22}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
-.eq-item.on{animation:light-up .35s ease-out}
-
-.eq-icon{font-size:23px;display:block;margin-bottom:4px}
-.eq-lbl{font-size:9px;color:var(--muted);font-weight:600;line-height:1.3}
+.eq-icon{font-size:22px;display:block;margin-bottom:4px}
+.eq-lbl{font-size:10px;color:var(--muted);font-weight:600;line-height:1.25}
 .eq-item.on .eq-lbl{color:var(--text)}
-.eq-kw{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);margin-top:2px}
+.eq-kw{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px}
 .eq-item.on .eq-kw{color:var(--green)}
 
-/* Load Bar */
-.load-row{display:flex;align-items:center;gap:10px;margin-top:13px}
-.load-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0}
-.load-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.load-fill{height:100%;border-radius:3px;background:linear-gradient(to right,var(--green),var(--amber),var(--red));transition:width .3s ease}
-.load-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;min-width:36px;text-align:right}
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.stats-row{grid-template-columns:1fr 1fr}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);font-weight:700;margin-bottom:3px}
+.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text);line-height:1.25}
+.c-amber{color:var(--amber)} .c-green{color:var(--green)} .c-blue{color:var(--blue)} .c-yellow{color:var(--yellow)}
 
-/* ===== STATS ROW ===== */
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(max-width:480px){.stats-row{grid-template-columns:1fr 1fr}}
-
-.stat{background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
-.stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);font-weight:700;margin-bottom:3px}
-.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text);line-height:1.25}
-.stat-val.c-amber{color:var(--amber)}
-.stat-val.c-green{color:var(--green)}
-.stat-val.c-blue{color:var(--blue)}
-
-/* ===== TAGS ===== */
 .tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px}
-.tag{
-  padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;
-  font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;border:1px solid;
-}
+.tag{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;border:1px solid}
 .t-blue{background:var(--blue-d);color:var(--blue);border-color:rgba(88,166,255,.25)}
 .t-green{background:var(--green-d);color:var(--green);border-color:rgba(63,185,80,.25)}
 .t-amber{background:var(--amber-d);color:var(--amber);border-color:rgba(240,165,0,.25)}
 .t-yellow{background:var(--yellow-d);color:var(--yellow);border-color:rgba(227,179,65,.25)}
 .t-red{background:var(--red-d);color:var(--red);border-color:rgba(248,81,73,.25)}
-
-/* ===== DESCRIPTION ===== */
-.rec-text{font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:14px}
+.rec-text{font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:14px}
 .divider{border:none;border-top:1px solid var(--border);margin:0 0 13px}
-
-/* ===== ALERTS ===== */
-.alert{
-  border-radius:var(--r);padding:11px 13px;font-size:12px;
-  line-height:1.65;border:1px solid;margin-bottom:9px;
-}
-.alert:last-of-type{margin-bottom:0}
-.alert strong{
-  display:block;font-weight:700;margin-bottom:3px;
-  font-family:'Barlow Condensed',sans-serif;font-size:11px;
-  letter-spacing:.5px;text-transform:uppercase;
-}
+.alert{border-radius:var(--r);padding:11px 13px;font-size:13px;line-height:1.6;border:1px solid;margin-bottom:9px}
+.alert strong{display:block;font-weight:700;margin-bottom:3px;font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
 .a-warning{background:rgba(248,81,73,.07);border-color:rgba(248,81,73,.25);color:#f98e88}
 .a-tip{background:var(--yellow-d);border-color:rgba(227,179,65,.25);color:var(--yellow)}
-.a-info{background:var(--blue-d);border-color:rgba(88,166,255,.25);color:var(--blue)}
-.a-success{background:var(--green-d);border-color:rgba(63,185,80,.25);color:var(--green)}
+.a-info{background:var(--blue-d);border-color:rgba(88,166,255,.25);color:#8cc2ff}
+.a-success{background:var(--green-d);border-color:rgba(63,185,80,.25);color:#6fd47f}
+.tipbox{background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.18);border-left:3px solid var(--amber);border-radius:var(--r);padding:11px 13px;font-size:13px;color:rgba(240,165,0,.9);line-height:1.65;margin-top:13px}
+.tipbox strong{display:block;color:var(--amber);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.tipbox ul{margin:4px 0 0 18px}
+.tipbox li{margin-bottom:3px}
 
-/* ===== SALES TIP ===== */
-.sales-tip{
-  background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.18);
-  border-left:3px solid var(--amber);border-radius:var(--r);
-  padding:11px 13px;font-size:12px;color:rgba(240,165,0,.85);line-height:1.65;
-  margin-top:13px;
-}
-.sales-tip strong{
-  display:block;color:var(--amber);font-family:'Barlow Condensed',sans-serif;
-  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;
-}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--elevated);border:1px solid var(--border);border-radius:var(--r);padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);transition:border-color .15s}
+.btn:hover{border-color:var(--amber)}
+.btn.primary{background:var(--amber);color:#000;border-color:var(--amber)}
 
-/* ===== FOOTER ===== */
-.ftr{
-  text-align:center;padding:10px 16px;font-size:10px;
-  color:var(--dim);border-top:1px solid var(--border);background:var(--surface);
+/* CTA */
+.cta{background:linear-gradient(135deg,rgba(240,165,0,.14),rgba(240,165,0,.03));border:1px solid rgba(240,165,0,.35);border-radius:var(--rlg);padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.cta-k{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
+.cta h2{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;line-height:1.1;margin-bottom:6px}
+.cta p{font-size:13px;color:var(--muted);max-width:560px;line-height:1.6}
+.cta-btn{background:var(--amber);color:#000;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;letter-spacing:.5px;padding:12px 24px;border-radius:var(--r);white-space:nowrap;transition:transform .15s}
+.cta-btn:hover{transform:translateY(-1px)}
+
+.ftr{text-align:center;padding:14px 16px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);background:var(--surface);line-height:1.7}
+.ftr a{color:var(--muted)}
+.hidden{display:none!important}
+.mbar{display:none}
+@media(max-width:900px){.mbar{display:flex;position:sticky;bottom:0;z-index:90;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:rgba(22,27,34,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border)}.mbar b{font-family:"JetBrains Mono",monospace;color:var(--amber);font-size:18px}.mbar span{font-size:12px;color:var(--muted)}.mbar button{border:none;cursor:pointer;background:var(--amber);color:#000;font-weight:700;font-size:12px;padding:7px 12px;border-radius:6px;text-decoration:none;white-space:nowrap}}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media print{
+  body{background:#fff;color:#000}
+  .hdr-ctrls,.left,.actions,.cta,.ind-grid{display:none!important}
+  .app{display:block}
+  .card,.stat,.bd-item{background:#fff!important;border-color:#bbb!important;color:#000!important;break-inside:avoid}
+  .rec-text,.bd-s,.lf-note{color:#333!important}
 }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header class="hdr">
-  <div class="hdr-logo">⚡</div>
+  <div class="hdr-logo" aria-hidden="true">⚡</div>
   <div>
-    <div class="hdr-title">Generator Power Calculator</div>
-    <div class="hdr-sub">Industrial &amp; Commercial Sizing Tool</div>
+    <div class="hdr-title">Generator Sizing Calculator</div>
+    <div class="hdr-sub">Standby · Prime · Continuous: industrial &amp; commercial</div>
   </div>
-  <div class="hdr-badge">SALES TOOL</div>
+  <div class="hdr-ctrls">
+    <div class="seg" role="group" aria-label="Audience view">
+      <button type="button" data-view="buyer" aria-pressed="true">Buyer view</button>
+      <button type="button" data-view="sales" aria-pressed="false">Sales view</button>
+    </div>
+    <div class="seg" role="group" aria-label="Units">
+      <button type="button" data-units="metric" aria-pressed="true">Metric</button>
+      <button type="button" data-units="us" aria-pressed="false">US</button>
+    </div>
+  </div>
 </header>
 
-<!-- MAIN -->
-<div class="app">
+<main class="app">
 
   <!-- LEFT PANEL -->
-  <div class="left">
-    <div class="lbl"><span class="lbl-step">1</span>Select Your Industry</div>
+  <section class="left" aria-label="Inputs">
+    <div class="lbl"><span class="lbl-step">1</span>Select your industry</div>
     <div class="ind-grid" id="indGrid"></div>
 
-    <div class="lbl"><span class="lbl-step">2</span>Target Power Output</div>
-    <div class="power-val">
-      <div class="power-num" id="pwrNum">50</div>
-      <div class="power-unit">kW</div>
+    <div class="lbl"><span class="lbl-step">2</span>Size the generator</div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabBuild" aria-selected="true" data-mode="build">🧮 Load builder</button>
+      <button type="button" role="tab" id="tabQuick" aria-selected="false" data-mode="quick">🎚️ Quick estimate</button>
     </div>
-    <input type="range" id="pwrSlider" min="0" max="30" step="1" value="5">
-    <div class="slider-ends"><span>10 kW</span><span>2,000 kW</span></div>
-    <div class="band-bar" id="bandBar">
-      <div class="band-seg"></div>
-      <div class="band-seg"></div>
-      <div class="band-seg"></div>
-      <div class="band-seg"></div>
-      <div class="band-seg"></div>
-    </div>
-    <div class="band-text" id="bandText"></div>
-  </div>
 
-  <!-- RIGHT PANEL -->
-  <div class="right">
-
-    <!-- Equipment visual -->
-    <div class="card">
-      <div class="card-lbl">Active Equipment Load Visualization</div>
-      <div class="eq-grid" id="eqGrid"></div>
-      <div class="load-row">
-        <span class="load-lbl">Site Load</span>
-        <div class="load-track"><div class="load-fill" id="loadFill" style="width:16%"></div></div>
-        <span class="load-pct" id="loadPct">16%</span>
+    <!-- BUILDER -->
+    <div id="modeBuild">
+      <div class="sub-lbl">Connected loads (set quantities)</div>
+      <div class="load-list" id="loadList"></div>
+      <div class="sub-lbl">Add a custom load</div>
+      <div class="custom-add">
+        <input id="cName" placeholder="Name" aria-label="Custom load name">
+        <input id="cVal" type="number" min="0" step="any" placeholder="Size" aria-label="Custom load size">
+        <select id="cType" aria-label="Custom load unit"><option value="kw">kW</option><option value="hp">hp (motor)</option></select>
+        <button type="button" id="cAdd" aria-label="Add custom load">+</button>
+      </div>
+      <div class="sub-lbl">Site &amp; design conditions</div>
+      <div class="fields">
+        <div class="field"><label for="fAlt">Altitude (<span class="u-alt">m</span>)</label><input id="fAlt" type="number" min="0" step="50" value="0"></div>
+        <div class="field"><label for="fAmb">Max ambient (<span class="u-temp">°C</span>)</label><input id="fAmb" type="number" step="1" value="35"></div>
+        <div class="field"><label for="fGrowth">Growth margin</label>
+          <select id="fGrowth"><option value="0">0%</option><option value="0.1">10%</option><option value="0.2" selected>20%</option><option value="0.3">30%</option></select></div>
+        <div class="field"><label for="fDuty">Duty</label>
+          <select id="fDuty"><option value="auto">Auto (by industry)</option><option value="standby">Standby</option><option value="prime">Prime</option><option value="continuous">Continuous</option></select></div>
+        <div class="field full"><label for="fStart">Motor starting method</label>
+          <select id="fStart">
+            <option value="dol">Across-the-line / DOL (~6× kVA per hp)</option>
+            <option value="yd">Wye-delta (~2× kVA per hp)</option>
+            <option value="soft">Soft starter (~3× kVA per hp)</option>
+            <option value="vfd">VFD (~1.2× kVA per hp)</option>
+          </select></div>
       </div>
     </div>
 
-    <!-- Stats -->
-    <div class="stats-row" id="statsRow"></div>
+    <!-- QUICK -->
+    <div id="modeQuick" class="hidden">
+      <div class="power-val">
+        <div class="power-num" id="pwrNum">50</div>
+        <div class="power-unit">kW</div>
+        <div class="power-kva" id="pwrKva">63 kVA</div>
+      </div>
+      <input type="range" id="pwrSlider" min="0" max="10" step="1" value="5" aria-label="Generator size">
+      <div class="slider-ends"><span id="sMin">10 kW</span><span id="sMax">3,000 kW</span></div>
+      <div class="band-bar" aria-hidden="true">
+        <div class="band-seg"></div><div class="band-seg"></div><div class="band-seg"></div><div class="band-seg"></div><div class="band-seg"></div>
+      </div>
+      <div class="band-text" id="bandText"></div>
+      <div class="hint">Already know roughly what you need? Slide to a standard size to see typical use cases, ratings and pitfalls. For a defensible number, use the <button type="button" class="link" data-goto="build">load builder</button>.</div>
+    </div>
+  </section>
 
-    <!-- Recommendation -->
+  <!-- RIGHT PANEL -->
+  <section class="right" id="results" aria-live="polite">
+
     <div class="card">
-      <div class="card-lbl">System Recommendation</div>
-      <div class="tags" id="tagsArea"></div>
-      <div class="rec-text" id="recText">Select an industry and power level above to see detailed sizing recommendations.</div>
-      <hr class="divider">
-      <div id="alertsArea"></div>
-      <div class="sales-tip" id="salesTip"><strong>Sales Strategy</strong>Select an industry to see targeted sales guidance.</div>
+      <div class="card-lbl" id="resLbl">Recommended generator <span id="resBand"></span></div>
+      <div class="result">
+        <div>
+          <div class="res-size" id="resSize">—</div>
+          <div class="res-kva" id="resKva"></div>
+          <div class="res-rating" id="resRating"></div>
+        </div>
+        <div>
+          <div class="lf-lbl"><span>Running load factor</span><b id="lfVal">—</b></div>
+          <div class="lf-track"><div class="lf-mark" id="lfMark" style="left:0%"></div></div>
+          <div class="lf-scale"><span>wet-stack &lt;30%</span><span>light</span><span>ideal 50–80%</span><span>tight</span></div>
+          <div class="lf-note" id="lfNote"></div>
+        </div>
+      </div>
     </div>
 
-  </div>
-</div>
+    <div class="card" id="bdCard">
+      <div class="card-lbl">Sizing breakdown <span>estimate · verify with OEM sizing software</span></div>
+      <div class="bd" id="bdGrid"></div>
+      <div class="formula" id="formula"></div>
+    </div>
 
-<footer class="ftr">Generator Power Calculator &nbsp;·&nbsp; Estimation purposes only &nbsp;·&nbsp; Always consult a certified electrical engineer for final system design</footer>
+    <div class="card">
+      <div class="card-lbl" id="eqLbl">What this size can run</div>
+      <div class="eq-grid" id="eqGrid"></div>
+    </div>
 
-<!-- ===== JAVASCRIPT ===== -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="card">
+      <div class="card-lbl">System recommendation</div>
+      <div class="tags" id="tagsArea"></div>
+      <div class="rec-text" id="recText"></div>
+      <hr class="divider">
+      <div id="alertsArea"></div>
+      <div class="tipbox" id="tipBox"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" type="button" id="btnCopy">📋 Copy summary</button>
+      <button class="btn" type="button" id="btnShare">🔗 Share link</button>
+      <button class="btn" type="button" id="btnPrint">⎙ Print / PDF</button>
+    </div>
+
+    <aside class="cta" aria-label="Contact">
+      <div>
+        <div class="cta-k">Built for power-gen dealers, rental fleets &amp; OEMs</div>
+        <h2>Want this calculator for your business?</h2>
+        <p>I build custom, on-brand sizing tools and configurators that capture qualified leads and help sales teams quote faster. Your products, your data, your website. Reach out to get started.</p>
+      </div>
+      <a class="cta-btn" href="https://zov911.com" target="_blank" rel="noopener">Reach out → zov911.com</a>
+    </aside>
+  </section>
+</main>
+
+<div class="mbar" id="mbar"><div><b id="mbSize">—</b> <span id="mbNote"></span></div><button type="button" id="mbGo">See results ↓</button></div>
+
+<footer class="ftr">
+  © <span id="yr">2026</span> zov911 · Designed &amp; built by <a href="https://zov911.com" target="_blank" rel="noopener">zov911</a> · Estimation and education only. Final design must be done by a licensed electrical engineer using manufacturer data and local codes.
+</footer>
+
 <script>
-/* ---------- DATA ---------- */
+/* ═══════════════════ CONSTANTS ═══════════════════ */
+const SIZES = [10,15,20,25,30,40,50,60,80,100,125,150,175,200,250,300,350,400,450,500,600,750,800,1000,1250,1500,2000,2500,3000];
+const PF = 0.8;                 // genset kVA rating basis
+const HP_KW = 0.746 / 0.9;      // running kW per motor hp (≈90% efficiency)
+const START_KVA_PER_HP = {dol:6.0, yd:2.0, soft:3.0, vfd:1.2};
+const START_LABEL = {dol:'across-the-line', yd:'wye-delta', soft:'soft starter', vfd:'VFD'};
+const SURGE_K = 2.5;            // starting kVA an alternator accepts ≈ 2.5× its kVA at ~25–30% voltage dip
+const LOAD_TARGET = {standby:0.80, prime:0.70, continuous:0.90};
+const DIESEL_L_PER_KWH = 0.28;  // at ~75% load, mid-size units
+const NG_M3_PER_KWH = 0.30;
 
-const POWER = [10,14,20,30,40,50,60,70,80,90,100,125,135,140,150,175,200,250,270,300,330,350,400,450,500,600,700,800,850,1000,2000];
-
-function getBand(i){
-  if(i<=4)  return{n:1,name:"Band 1 — Micro to Small Commercial",desc:"10–40 kW"};
-  if(i<=14) return{n:2,name:"Band 2 — Lower-Medium Commercial & Industrial",desc:"50–150 kW"};
-  if(i<=22) return{n:3,name:"Band 3 — Upper-Medium Industrial",desc:"175–400 kW"};
-  if(i<=28) return{n:4,name:"Band 4 — Large Industrial & Mission Critical",desc:"450–850 kW"};
-  return          {n:5,name:"Band 5 — Mega-Watt Class Base Power",desc:"1,000–2,000 kW"};
+function getBand(kw){
+  if(kw<=40)   return {n:1,name:'Band 1: Micro / small commercial'};
+  if(kw<=150)  return {n:2,name:'Band 2: Light commercial & industrial'};
+  if(kw<=500)  return {n:3,name:'Band 3: Medium industrial'};
+  if(kw<=1000) return {n:4,name:'Band 4: Large industrial & mission critical'};
+  return              {n:5,name:'Band 5: Megawatt class / paralleled'};
 }
 
-/* Each industry: icon, equipment[], getLogic(kw) → {tags,desc,alerts,tip,fuel,rating,mobility} */
-const IND = {
+/* Shared alert snippets (2026 review) */
+const AL = {
+  tier4:{type:'a-warning',title:'Emissions: emergency vs non-emergency',text:'In the US, emergency-standby diesel gensets can be certified to EPA Tier 2/3 (NSPS Subpart IIII) and are limited to about 100 h/yr of maintenance and testing. Any non-emergency use (prime power, peak shaving, most demand response) requires Tier 4 Final, which above roughly 560 kW typically means SCR with DEF and often a DPF. Check state and provincial air permits too (e.g. CARB in California).'},
+  leadtime:{type:'a-info',title:'Lead times at this size',text:'AI data-center demand has stretched lead times for 1 MW+ diesel and gas gensets to a year or more in 2024–2026. Reserve production slots early, consider paralleling smaller stock units, or plan a rental bridge.'},
+  nfpaL1:{type:'a-warning',title:'NFPA 110 Level 1 / Type 10',text:'Life-safety loads (NEC Article 700) must be restored within 10 seconds. Plan monthly exercising at ≥ 30% load (or per NFPA 110 exhaust-temperature criteria) and a 4-hour load test at least every 36 months. In Canada, CSA C282 applies.'},
+  gasRisk:{type:'a-info',title:'Pipeline gas resilience',text:'Earthquakes, floods and gas-curtailment events can interrupt pipeline supply exactly when the grid fails. For critical sites, consider dual-fuel or bi-fuel, on-site LPG backup, or a diesel/HVO primary.'},
+  hvo:{type:'a-success',title:'Lower-carbon diesel option',text:'Most major OEMs now approve HVO renewable diesel (EN 15940 / ASTM D975) as a drop-in fuel. It cuts lifecycle CO₂ substantially and stores better than biodiesel, with no hardware change.'},
+  hybrid:{type:'a-success',title:'Battery-hybrid option',text:'Pairing the genset with a battery energy storage system (BESS) lets the engine run at its efficient load point or shut off during low-demand hours. It cuts fuel, run hours, noise and wet-stacking risk on sites with variable load.'},
+  nonlinear:{type:'a-tip',title:'Non-linear loads',text:'VFDs, UPS rectifiers, LED drivers and EV chargers distort the generator\'s voltage waveform. Specify a PMG-excited alternator, check voltage THD (target ≤ 5–8%), and oversize the alternator where drives make up a large share of the load.'},
+};
 
-  "Agricultural":{
-    icon:"🌾",
-    equipment:[
-      {icon:"💡",label:"Farm Lighting",kw:10},
-      {icon:"🥛",label:"Milking System",kw:20},
-      {icon:"❄️",label:"Milk Cooling",kw:30},
-      {icon:"🌡️",label:"Barn Climate",kw:50},
-      {icon:"🌾",label:"Grain Dryer",kw:80},
-      {icon:"💧",label:"Small Pump",kw:100},
-      {icon:"🚿",label:"Irrigation Hub",kw:200},
-      {icon:"🏭",label:"Processing Plant",kw:350}
+/* ═══════════════════ INDUSTRIES ═══════════════════
+   loads: running kW (kw) or motor hp (hp). def = default qty in builder.
+   duty: default duty for builder Auto mode. ask: buyer-view questions.
+   getLogic(kw) → tags, desc, alerts, tip (sales view), fuel, rating, mobility */
+const IND = {
+  "Agricultural":{icon:"🌾",duty:'standby',
+    loads:[
+      {icon:"💡",label:"Lighting & outlets",kw:8,def:1},
+      {icon:"🥛",label:"Milking vacuum pump",hp:10,def:1},
+      {icon:"❄️",label:"Bulk milk cooler",hp:15,def:1},
+      {icon:"🌬️",label:"Barn ventilation fans",kw:10,def:1},
+      {icon:"🔥",label:"Water heating",kw:18,def:0},
+      {icon:"🌾",label:"Grain dryer fan",hp:30,def:0},
+      {icon:"🏗️",label:"Grain auger / leg",hp:15,def:0},
+      {icon:"💧",label:"Irrigation pump",hp:75,def:0},
     ],
+    ask:["Do I need to back up the whole farm, or only milking, cooling and ventilation?","Single-phase or three-phase service, and what voltage?","Is a PTO-driven or towable unit enough for seasonal loads?"],
     getLogic(kw){
       if(kw<=40) return{
-        tags:[{t:"Standby / Prime",c:"t-blue"},{t:"Diesel / Propane",c:"t-amber"},{t:"Towable",c:"t-green"}],
-        desc:"Small farms need basic lighting, single-phase outlets, and small pumps. Towable diesel units are common for seasonal or remote field use. Propane is a clean alternative where natural gas pipelines aren't available.",
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Propane",c:"t-amber"},{t:"PTO / Towable",c:"t-green"}],
+        desc:"Small farms usually protect lighting, water, a milking system and ventilation. Tractor-PTO generators are a low-cost option for occasional outages, while a permanent unit with an automatic transfer switch protects livestock when nobody is on site. Propane suits farms without pipeline gas and avoids diesel storage.",
         alerts:[],
-        tip:"Ask about seasonal vs year-round use. Towable units offer flexibility across dispersed outbuildings. Confirm single vs three-phase power requirements early.",
-        fuel:"Diesel / Propane",rating:"Standby",mobility:"Mobile / Fixed"
-      };
+        tip:"Ask about seasonal vs year-round use and who is on site at night. Livestock ventilation failures cause losses within minutes in hot weather, so an ATS is an easy upsell.",
+        fuel:"Diesel / Propane",rating:"Standby",mobility:"Mobile / Fixed"};
       if(kw<=150) return{
-        tags:[{t:"Standby / Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"3-Phase 480V",c:"t-yellow"}],
-        desc:"Dairy operations require ~5 kWh/cow/month for milking and cooling systems. Grain dryers consume 1–2 kWh/bushel. Three-phase power becomes essential above 50 kW for motor-driven farm equipment.",
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"3-Phase",c:"t-yellow"}],
+        desc:"Dairies typically use about 800–1,200 kWh per cow per year, dominated by milking vacuum, milk cooling and water heating. Three-phase power becomes the norm above about 50 kW for motor-driven equipment, and large barn ventilation fans are both life-safety and animal-welfare loads.",
         alerts:[],
-        tip:"For dairy farms, milking system reliability is critical — even brief outages cause animal stress and milk loss. Recommend an automatic transfer switch (ATS) for seamless utility failover.",
-        fuel:"Diesel",rating:"Standby / Prime",mobility:"Fixed"
-      };
-      if(kw<=350) return{
-        tags:[{t:"Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"3-Phase 480V",c:"t-yellow"}],
-        desc:"Deep-well vertical turbine irrigation pumps operate under massive Total Dynamic Head (TDH) pressure. Starting kVA can be 6–7× the running watts — the generator needs an oversized alternator to prevent voltage collapse during pump initiation.",
-        alerts:[{type:"a-tip",title:"Motor Starting Alert",text:"Calculate skVA before sizing: Motor HP × NEMA Code Multiplier. A 50 HP pump (NEMA Code G) requires ~300 skVA to start. Ask the customer for pump HP and well depth."}],
-        tip:"Recommend VFDs for large irrigation pumps — they cut starting demand by up to 60%, allow a smaller generator, and eliminate wet-stacking risk. The smaller generator + VFD often costs less than an oversized unit alone.",
-        fuel:"Diesel",rating:"Prime",mobility:"Fixed"
-      };
+        tip:"Milking cannot wait. Missed milkings cause animal stress and lost production. Position an ATS and remote alarm as herd protection, not just convenience.",
+        fuel:"Diesel",rating:"Standby / Prime",mobility:"Fixed"};
+      if(kw<=500) return{
+        tags:[{t:"Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"Motor Start",c:"t-red"}],
+        desc:"Deep-well irrigation pumps and grain-handling motors dominate this band. Across-the-line starting draws roughly 6× the running kVA, so an undersized alternator causes voltage collapse and contactor chatter. Off-grid irrigation sets often run prime-rated for the whole season.",
+        alerts:[{type:"a-tip",title:"Motor starting",text:"Starting kVA ≈ motor hp × NEMA code-letter multiplier (code G ≈ 5.6–6.3 kVA/hp). A 50 hp code-G pump needs about 300 kVA to start. Get pump hp and starting method before quoting."}],
+        tip:"Recommend VFDs on large irrigation pumps. They cut starting kVA by up to 80%, allow a much smaller generator, and save pumping energy. Smaller genset plus VFD often costs less than an oversized genset alone.",
+        fuel:"Diesel",rating:"Prime",mobility:"Fixed / Towable"};
       return{
-        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"N+1 Recommended",c:"t-red"}],
-        desc:"Large-scale operations with multiple irrigation hubs and grain processing facilities. At this scale, paralleling two generators eliminates single points of failure and allows maintenance without stopping production.",
-        alerts:[{type:"a-warning",title:"Wet-Stacking Risk",text:"If sized for peak irrigation startup (e.g. 400 kW) but steady-state running load is only 80–100 kW, the diesel engine runs at 20–25% capacity — causing cylinder glazing and exhaust slobber that will destroy the engine."}],
-        tip:"Large agricultural buyers often use equipment financing programs. Explore lease-to-own options for capital-sensitive clients. Position redundancy as crop protection insurance.",
-        fuel:"Diesel",rating:"Prime / Continuous",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel / Gas",c:"t-amber"},{t:"N+1",c:"t-red"}],
+        desc:"Large operations with multiple irrigation hubs, grain terminals or processing plants. Paralleling two or more units removes the single point of failure and lets you match the number of running engines to seasonal load. On-farm biogas from digesters is an option for continuous gas-fired generation.",
+        alerts:[AL.tier4],
+        tip:"Large agricultural buyers often use equipment financing and grant programs (e.g. USDA REAP in the US). Position redundancy as crop and herd insurance.",
+        fuel:"Diesel / Biogas",rating:"Prime / Continuous",mobility:"Fixed"};
+    }},
 
-  "Commercial":{
-    icon:"🏢",
-    equipment:[
-      {icon:"💡",label:"Lighting",kw:10},
-      {icon:"🖥️",label:"POS / IT",kw:20},
-      {icon:"❄️",label:"HVAC Unit",kw:40},
-      {icon:"🧊",label:"Refrigeration",kw:60},
-      {icon:"🛗",label:"Elevators",kw:80},
-      {icon:"🌡️",label:"Chillers",kw:150},
-      {icon:"🖥️",label:"Server Room",kw:250},
-      {icon:"🏢",label:"Full Building",kw:400}
+  "Commercial":{icon:"🏢",duty:'standby',
+    loads:[
+      {icon:"💡",label:"Lighting",kw:15,def:1},
+      {icon:"🖥️",label:"POS / IT / security",kw:5,def:1},
+      {icon:"❄️",label:"Rooftop HVAC unit",hp:20,def:1},
+      {icon:"🧊",label:"Refrigeration rack",hp:15,def:1},
+      {icon:"🛗",label:"Elevator",hp:25,def:0},
+      {icon:"🌡️",label:"Chiller",hp:100,def:0},
+      {icon:"🗄️",label:"Server room (UPS)",kw:30,def:0},
+      {icon:"🚒",label:"Fire pump",hp:50,def:0},
+      {icon:"🔌",label:"EV charger (DCFC)",kw:50,def:0},
     ],
+    ask:["Which loads are legally required (life safety, fire pump) versus business-critical?","Natural gas or diesel, and how long must we run without refueling?","Can we use load-shed controls to fit a smaller unit?"],
     getLogic(kw){
       if(kw<=80) return{
-        tags:[{t:"Standby",c:"t-blue"},{t:"Natural Gas",c:"t-green"},{t:"3-Phase 208V",c:"t-yellow"}],
-        desc:"Commercial loads are highly predictable and largely resistive. A practical rule: 50 kW base + 10 W/sqft for retail, 5 W/sqft for offices. A typical grocery store needs 60–80 kW standby to protect refrigerated inventory from power loss.",
+        tags:[{t:"Standby",c:"t-blue"},{t:"Natural Gas",c:"t-green"},{t:"3-Phase 208/480V",c:"t-yellow"}],
+        desc:"Small retail, restaurants and offices. Loads are predictable: lighting, IT, HVAC and refrigeration. A convenience store or small grocer often needs 60–150 kW mainly to protect refrigerated inventory. Natural gas avoids on-site fuel storage and fuel degradation.",
         alerts:[],
-        tip:"Natural Gas is the ideal commercial standby pitch — no on-site fuel tanks, no degradation, lower maintenance overhead. Present 20-year total cost of ownership vs diesel to close premium deals.",
-        fuel:"Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
+        tip:"Present a 10–20 year total cost of ownership for natural gas vs diesel (fuel, maintenance, permitting). For grocers, one avoided spoilage event can pay for the system.",
+        fuel:"Natural Gas",rating:"Standby",mobility:"Fixed"};
       if(kw<=250) return{
-        tags:[{t:"Standby",c:"t-blue"},{t:"Natural Gas / Diesel",c:"t-amber"},{t:"3-Phase 480V",c:"t-yellow"}],
-        desc:"Mid-size commercial buildings add elevator motors, large HVAC chillers, and dedicated server room UPS systems. Elevator motors carry significant inrush current and require adequate starting kVA headroom from the alternator.",
-        alerts:[{type:"a-info",title:"Elevator Motor Starting",text:"Multiple elevators starting simultaneously create significant voltage dips. Confirm starting method — soft-starters reduce skVA requirements by 40–60% and can allow a meaningfully smaller generator."}],
-        tip:"Soft starters on elevator motors reduce generator size and total project cost. Present this as an optimization, not an add-on. It builds technical trust and often improves your margin.",
-        fuel:"Natural Gas / Diesel",rating:"Standby",mobility:"Fixed"
-      };
-      if(kw<=500) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Natural Gas / Diesel",c:"t-amber"},{t:"NEC 700/701/702",c:"t-yellow"}],
+        desc:"Mid-size buildings add elevators, chillers and server rooms. Separate emergency (NEC 700), legally required standby (701) and optional standby (702) circuits; they have different transfer-time and wiring rules. Elevator and chiller inrush sets the alternator size.",
+        alerts:[{type:"a-info",title:"Elevator & chiller starting",text:"Soft starters or VFDs on elevators and chillers reduce starting kVA by 50–80% and can drop the generator a full size or two. Stagger restarts with ATS load-sequencing."}],
+        tip:"Offer soft starters and load sequencing as an optimization. It builds technical trust and often improves both the customer's budget and your margin.",
+        fuel:"Natural Gas / Diesel",rating:"Standby",mobility:"Fixed"};
+      if(kw<=750) return{
         tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"NFPA 110",c:"t-red"}],
-        desc:"Large commercial complexes and office towers require comprehensive standby power. Diesel handles heavy chiller and elevator motor starting loads effectively. Life-safety systems (fire panels, egress lighting) must be on dedicated circuits sized separately.",
-        alerts:[{type:"a-info",title:"Natural Gas Pipeline Risk",text:"For disaster-prone regions: earthquakes and severe flooding can sever gas pipelines. Dual-fuel capability or diesel-primary is advisable where pipeline reliability is uncertain."}],
-        tip:"Large commercial clients have regulatory requirements around emergency egress and fire suppression systems. Ask about life-safety loads first — these often drive the generator size more than general building load.",
-        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
+        desc:"Office towers, malls and campuses. Diesel handles big block loads (chillers, fire pumps) well; gas units may need load steps. Life-safety loads must be on their own transfer switch and restored within 10 seconds.",
+        alerts:[AL.gasRisk],
+        tip:"Ask about life-safety and fire-pump loads first. They often drive generator size and code requirements more than general building load.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"};
       return{
-        tags:[{t:"Standby / Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"EPA Tier 4 Final",c:"t-red"}],
-        desc:"Hyperscale commercial facilities and data centers require N+1 redundant generator configurations. A single 1,000+ kW generator creates an unacceptable single point of failure for mission-critical operations.",
-        alerts:[{type:"a-warning",title:"EPA Tier 4 Final Required",text:"Non-emergency diesel generators over 560 kW must comply with EPA Tier 4 Final — requiring urea-based SCR and DPF exhaust aftertreatment systems. Factor compliance infrastructure and ongoing DEF costs into project budgeting."}],
-        tip:"Pitch paralleling: three 500 kW units at N+1 over one 1,000 kW unit. Paralleled units offer load diversity, easier maintenance scheduling, and eliminate single-point failure risk — often with a lower installed cost.",
-        fuel:"Diesel",rating:"Standby / Continuous",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / HVO",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"}],
+        desc:"Large commercial complexes. A single megawatt unit is a single point of failure. Paralleled sets (e.g. three 500 kW units for a 1 MW load at N+1) offer redundancy, staged loading and maintenance without downtime.",
+        alerts:[AL.leadtime,AL.hvo],
+        tip:"Pitch paralleling: N+1 smaller units often have shorter lead times, easier rigging and lower installed risk than one large set.",
+        fuel:"Diesel / HVO",rating:"Standby",mobility:"Fixed"};
+    }},
 
-  "Forestry":{
-    icon:"🌲",
-    equipment:[
-      {icon:"💡",label:"Camp Lighting",kw:10},
-      {icon:"🔧",label:"Power Tools",kw:20},
-      {icon:"🪚",label:"Basic Sawmill",kw:40},
-      {icon:"💨",label:"Air Compressor",kw:80},
-      {icon:"🌡️",label:"Kiln Dryer",kw:150},
-      {icon:"🏗️",label:"Conveyor System",kw:250},
-      {icon:"🏭",label:"Full Processing",kw:350}
+  "Construction & Events":{icon:"🏗️",duty:'prime',isNew:true,
+    loads:[
+      {icon:"🔦",label:"Light tower",kw:6,def:2},
+      {icon:"🏠",label:"Site office / trailers",kw:15,def:1},
+      {icon:"🔧",label:"Tools & welders",kw:20,def:1},
+      {icon:"🏗️",label:"Tower crane",hp:75,def:0},
+      {icon:"⬆️",label:"Material hoist",hp:30,def:0},
+      {icon:"🎤",label:"Stage lighting & audio",kw:60,def:0},
+      {icon:"🍽️",label:"Catering / food vendors",kw:40,def:0},
+      {icon:"🔌",label:"EV / e-machine charging",kw:50,def:0},
     ],
+    ask:["What is the peak vs overnight load? Would a battery hybrid save fuel?","Are there noise limits (dBA at 7 m) or emissions rules on site?","Rent or buy, and who handles refueling and service?"],
+    getLogic(kw){
+      if(kw<=60) return{
+        tags:[{t:"Prime",c:"t-blue"},{t:"Diesel / HVO",c:"t-amber"},{t:"Towable",c:"t-green"}],
+        desc:"Small sites and events: site offices, tools, light towers, small stages. Towable super-silent units are standard. Low and variable loads make light-load running (and wet-stacking) the main risk, so right-size the unit or add a battery pack.",
+        alerts:[AL.hybrid],
+        tip:"Battery-hybrid rental packages are now a top differentiator. Quote fuel and CO₂ savings per week, which general contractors increasingly report under ESG requirements.",
+        fuel:"Diesel / HVO",rating:"Prime",mobility:"Towable"};
+      if(kw<=400) return{
+        tags:[{t:"Prime",c:"t-blue"},{t:"Diesel / HVO",c:"t-amber"},{t:"Motor Start",c:"t-red"},{t:"Synchronized",c:"t-yellow"}],
+        desc:"Cranes and hoists bring large motor starts and regenerative loads. Festivals and mid-size events need N+1 for stages and audio. Synchronizing two smaller units lets you drop one overnight and keep both in their efficient load range.",
+        alerts:[AL.hybrid,AL.nonlinear],
+        tip:"Offer synchronized pairs instead of one big unit: better fuel economy, built-in redundancy, and both units stay rentable separately.",
+        fuel:"Diesel / HVO",rating:"Prime",mobility:"Towable / Containerized"};
+      return{
+        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel / Gas",c:"t-amber"},{t:"N+1",c:"t-red"},{t:"Stage V / Tier 4F",c:"t-red"}],
+        desc:"Major construction, tunneling and large outdoor events. Containerized multi-MW plants with paralleling switchgear, distribution and remote monitoring. Rental fleets increasingly require Tier 4 Final / EU Stage V engines and HVO for urban projects.",
+        alerts:[AL.tier4,AL.leadtime],
+        tip:"Sell the power plan, not the box: distribution, fueling logistics, telematics and 24/7 response. Service is where the margin is at this scale.",
+        fuel:"Diesel / HVO / Gas",rating:"Prime / Continuous",mobility:"Containerized"};
+    }},
+
+  "Data Center":{icon:"🖥️",duty:'standby',isNew:true,
+    loads:[
+      {icon:"🗄️",label:"Std racks ×10 (10 kW ea.)",kw:100,def:1},
+      {icon:"🧠",label:"AI/GPU row (4×80 kW)",kw:320,def:0},
+      {icon:"🔋",label:"UPS losses & recharge",kw:25,def:1},
+      {icon:"🌬️",label:"CRAH / fan walls",kw:30,def:1},
+      {icon:"🧊",label:"Chiller",hp:200,def:0},
+      {icon:"💧",label:"Cooling pumps / CDU",hp:40,def:0},
+      {icon:"💡",label:"Lighting & BMS",kw:10,def:1},
+      {icon:"🛡️",label:"Security & NOC",kw:10,def:1},
+    ],
+    ask:["What redundancy (N, N+1, 2N) and Uptime tier are we designing for?","How much IT load at day one vs full build-out, and how dense are the AI racks?","How many hours of on-site fuel, and do we have a refueling contract?"],
+    getLogic(kw){
+      if(kw<=150) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"Edge / Server Room",c:"t-green"}],
+        desc:"Edge sites, server rooms and small colocation suites. The UPS carries the load for the few seconds before the generator takes over; the generator then supports IT plus cooling. Always include cooling, because IT without cooling fails within minutes.",
+        alerts:[AL.nonlinear],
+        tip:"Edge buyers care about remote monitoring and service response more than kW. Bundle telematics and a maintenance plan.",
+        fuel:"Diesel",rating:"Standby",mobility:"Fixed"};
+      if(kw<=1000) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / HVO",c:"t-amber"},{t:"N+1",c:"t-red"},{t:"Data-Center Rated",c:"t-yellow"}],
+        desc:"Enterprise and mid-size colocation. Specify data-center continuous ratings (DCC/DCP) where available: unlimited hours at load during utility outages, unlike basic standby. N+1 paralleled sets and a load-bank connection for testing are standard.",
+        alerts:[AL.nonlinear,AL.hvo],
+        tip:"Talk ratings: DCC vs standby. Many buyers don't know the difference, and explaining it builds credibility fast.",
+        fuel:"Diesel / HVO",rating:"Standby / DCC",mobility:"Fixed"};
+      return{
+        tags:[{t:"DCC / Continuous",c:"t-blue"},{t:"Diesel / HVO / Gas",c:"t-amber"},{t:"2N / N+1",c:"t-red"},{t:"Long Lead Time",c:"t-red"}],
+        desc:"Hyperscale and AI campuses with 2–3 MW units in large paralleled blocks. AI training racks (40–130+ kW each) push power density far beyond legacy designs. Some campuses now add on-site gas generation as bridge or prime power while waiting for grid interconnection.",
+        alerts:[AL.leadtime,AL.tier4,AL.nonlinear],
+        tip:"Production slot availability is now part of the sale. Lead with delivery dates, factory witness testing and fleet-wide service capability.",
+        fuel:"Diesel / HVO / Natural Gas",rating:"DCC / Continuous",mobility:"Fixed"};
+    }},
+
+  "Forestry":{icon:"🌲",duty:'prime',
+    loads:[
+      {icon:"💡",label:"Camp lighting",kw:5,def:1},
+      {icon:"🏠",label:"Bunkhouse & kitchen",kw:15,def:1},
+      {icon:"🔧",label:"Shop & power tools",kw:8,def:1},
+      {icon:"🪚",label:"Sawmill headrig",hp:75,def:0},
+      {icon:"💨",label:"Air compressor",hp:25,def:0},
+      {icon:"🌡️",label:"Kiln (fans & controls)",kw:50,def:0},
+      {icon:"➡️",label:"Conveyor",hp:15,def:0},
+      {icon:"🌪️",label:"Dust collector",hp:40,def:0},
+    ],
+    ask:["Is the generator our only power source (prime) or backup?","What is the site elevation and summer temperature?","How often can fuel be delivered?"],
     getLogic(kw){
       if(kw<=60) return{
         tags:[{t:"Prime",c:"t-blue"},{t:"Towable Diesel",c:"t-amber"},{t:"Off-Grid",c:"t-green"}],
-        desc:"Remote logging camps rely entirely on diesel generators — the generator is not a backup, it IS the grid. A 15–30 kVA towable prime diesel unit is the industry standard for a multi-cabin camp powering basic lighting, refrigeration, and hand tools.",
-        alerts:[{type:"a-warning",title:"Never Specify Standby Units",text:"Standby-rated generators are not thermally engineered for 24/7 operation. In remote forestry applications they will fail rapidly. Always specify prime-rated units — the physical engine may be identical but the thermal derating is critical."}],
-        tip:"Always ask about site elevation — power output drops ~1% per 100m above sea level. Mountain logging sites above 1,500m may need a unit rated 15–20% higher than the calculated base load.",
-        fuel:"Diesel",rating:"Prime",mobility:"Mobile"
-      };
-      if(kw<=200) return{
+        desc:"Remote logging camps rely entirely on generators: the generator is the grid. A 20–40 kW towable prime unit typically covers a multi-cabin camp with kitchen, lighting and tools. Overnight loads are tiny, which makes battery-hybrid systems very attractive.",
+        alerts:[{type:"a-warning",title:"Never specify standby-rated units",text:"Standby ratings assume limited annual hours. Off-grid camps need prime-rated machines. The engine may look identical, but the warranty and thermal limits are not."},AL.hybrid],
+        tip:"Ask about elevation and fuel logistics first. Remote resupply costs often justify a hybrid or a larger fuel tank more than the genset itself.",
+        fuel:"Diesel / HVO",rating:"Prime",mobility:"Mobile"};
+      if(kw<=250) return{
         tags:[{t:"Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"Altitude Derating",c:"t-yellow"}],
-        desc:"Primary sawmill operations require power for belt conveyors, circular saws, and dust extraction systems. Kiln drying demands approximately 50 kW per kiln continuously — confirm kiln count with the customer before sizing.",
+        desc:"Primary sawmills with headrigs, conveyors and dust extraction. Kilns add steady fan and control load. Large saw motors make starting kVA, not running kW, the deciding factor.",
         alerts:[],
-        tip:"Confirm kiln count and typical timber thickness — moisture content significantly varies energy demand. Always verify the prime rating on the spec sheet before quoting; a standby-rated engine may look identical at first glance.",
-        fuel:"Diesel",rating:"Prime",mobility:"Semi-Fixed"
-      };
+        tip:"Confirm motor sizes and starting methods. Converting the headrig to soft start or VFD can save a full genset size.",
+        fuel:"Diesel",rating:"Prime",mobility:"Semi-Fixed"};
       return{
-        tags:[{t:"Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"3-Phase 480V",c:"t-yellow"}],
-        desc:"Large timber processing with multiple kilns, saw lines, and mechanical material handling. Prime power ratings are essential for 24/7 operation. Paralleled units provide business continuity — if one fails, reduced operations can continue.",
-        alerts:[{type:"a-tip",title:"Altitude Derating Required",text:"Confirm site elevation before finalizing sizing. Operations above 1,000m require 1% derating per 100m — a 300 kW generator at 2,000m effectively delivers ~280 kW. Size the nameplate accordingly."}],
-        tip:"Large sawmill operators get compelling ROI from paralleled prime units. If one unit fails, partial operations can continue — position this as business continuity, not just redundancy. It often justifies a larger total sale.",
-        fuel:"Diesel",rating:"Prime",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel / Biomass",c:"t-amber"},{t:"Paralleled",c:"t-yellow"}],
+        desc:"Large timber processing with multiple kilns and saw lines. Paralleled prime units provide business continuity. Mills with steady residue streams increasingly evaluate biomass CHP for heat and power.",
+        alerts:[AL.tier4],
+        tip:"Position paralleled prime units as business continuity: if one unit fails, the mill keeps cutting at reduced output.",
+        fuel:"Diesel",rating:"Prime",mobility:"Fixed"};
+    }},
 
-  "Greenhouses":{
-    icon:"🌿",
-    equipment:[
-      {icon:"💡",label:"Basic Lighting",kw:10},
-      {icon:"🌟",label:"Assimilation Lights",kw:50},
-      {icon:"🌡️",label:"Climate Control",kw:100},
-      {icon:"🌬️",label:"CO₂ Enrichment",kw:135},
-      {icon:"🔥",label:"Hot Water Heating",kw:200},
-      {icon:"💧",label:"Irrigation Systems",kw:250},
-      {icon:"⚡",label:"Full CHP System",kw:500},
-      {icon:"🌿",label:"Max Yield Output",kw:800}
+  "Greenhouses / CEA":{icon:"🌿",duty:'continuous',
+    loads:[
+      {icon:"💡",label:"LED grow lights (10k ft²)",kw:120,def:1},
+      {icon:"🌬️",label:"Climate & HAF fans",kw:15,def:1},
+      {icon:"💧",label:"Irrigation / fertigation",hp:7.5,def:1},
+      {icon:"🔥",label:"Boiler circulation pumps",hp:10,def:1},
+      {icon:"🌫️",label:"Dehumidification",kw:40,def:0},
+      {icon:"🧊",label:"Cold storage",hp:15,def:0},
+      {icon:"🖥️",label:"Controls & sensors",kw:3,def:1},
     ],
+    ask:["Do we have a year-round heat demand that CHP could use?","What does a lost night of lighting or heating cost us in crop value?","Will the utility allow parallel operation and export?"],
     getLogic(kw){
-      if(kw<135) return{
-        tags:[{t:"Standby",c:"t-blue"},{t:"Natural Gas",c:"t-green"}],
-        desc:"At this power level, basic greenhouse lighting and small climate systems are supported. For serious controlled-environment agriculture, CHP integration typically becomes viable from 135 kW — where thermal heat capture starts generating meaningful operational ROI.",
-        alerts:[{type:"a-info",title:"Consider CHP Above 135 kW",text:"If the greenhouse has coincident thermal and electrical loads, a CHP system from 135 kW achieves up to 90% total energy efficiency vs ~40% for standard generation. Conduct an energy audit before finalizing the recommendation."}],
-        tip:"Even for smaller greenhouses, conduct an energy audit to size correctly. CHP may be the right long-term solution — pitch a phased approach starting with standby and expanding to CHP as the operation scales.",
-        fuel:"Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
-      if(kw<=500) return{
+      if(kw<150) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Natural Gas / Propane",c:"t-green"}],
+        desc:"Small greenhouses: protect climate control, irrigation and heating circulation first, since frost or heat stress can destroy a crop overnight. CHP usually becomes viable once you have substantial, simultaneous heat and power demand.",
+        alerts:[{type:"a-info",title:"Consider CHP as you scale",text:"Combined heat and power captures engine heat for greenhouse heating, reaching 80–90% total fuel efficiency vs roughly 35–45% for power-only generation."}],
+        tip:"Propose a phased plan: standby now, CHP when the operation grows. It keeps you in the account.",
+        fuel:"Natural Gas / Propane",rating:"Standby",mobility:"Fixed"};
+      if(kw<=750) return{
         tags:[{t:"CHP / Cogeneration",c:"t-yellow"},{t:"Natural Gas",c:"t-green"},{t:"Continuous",c:"t-blue"}],
-        desc:"Controlled-environment agriculture requires an average of 11 W/sqft for assimilation lighting plus climate control and dehumidification. CHP captures waste exhaust heat for facility warming AND provides airborne CO₂ for crop fertilization — achieving up to 90% total system efficiency.",
-        alerts:[{type:"a-success",title:"CHP is the Gold Standard",text:"CHP reduces total facility energy cost by up to 30% vs separate boilers + utility power. Scrubbed exhaust CO₂ acts as organic fertilizer, directly accelerating plant yield and profitability. Traditional generation wastes 60% of fuel as exhaust heat — CHP captures it all."}],
-        tip:"This is a premium consultative sale. Calculate the CHP payback period (typically 3–7 years) and show total cost of ownership including heat capture value and CO₂ fertilization benefit. Sophisticated greenhouse operators respond to rigorous ROI data.",
-        fuel:"Natural Gas",rating:"Continuous / CHP",mobility:"Fixed"
-      };
+        desc:"Controlled-environment agriculture runs grow lights, dehumidification and climate control for long hours. Gas-engine CHP supplies power and hot water, and with exhaust clean-up (SCR plus catalyst) the flue gas can be used for CO₂ enrichment.",
+        alerts:[{type:"a-success",title:"CHP economics",text:"Typical paybacks run 3–7 years depending on gas/power price spread, heat utilization and incentives. Model it with real interval data before committing."}],
+        tip:"This is a consultative sale. Show payback, heat-utilization assumptions and CO₂ enrichment value. Sophisticated growers expect real numbers.",
+        fuel:"Natural Gas",rating:"Continuous / CHP",mobility:"Fixed"};
       return{
-        tags:[{t:"CHP / Cogeneration",c:"t-yellow"},{t:"Natural Gas",c:"t-green"},{t:"Continuous",c:"t-blue"},{t:"N+1 Redundancy",c:"t-red"}],
-        desc:"Industrial-scale greenhouse complexes require fully integrated CHP systems with N+1 redundancy. Electricity, heating, and CO₂ enrichment must operate without interruption — crop loss from any power failure at this scale is financially catastrophic.",
-        alerts:[{type:"a-success",title:"Maximum CHP ROI",text:"At 500+ kW, CHP payback periods shorten significantly. Offer a full facility energy model showing kWh savings, CO₂ tonnes captured annually, and BTU calculations for water heating. Large-scale operators are sophisticated buyers who expect this level of analysis."}],
-        tip:"Offer a full energy modeling study as part of the proposal package. Show kWh savings, CO₂ equivalent tonnes, and water heating BTU data side-by-side. This level of analysis differentiates you from equipment-only vendors and justifies premium pricing.",
-        fuel:"Natural Gas",rating:"Continuous / CHP",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"CHP",c:"t-yellow"},{t:"Natural Gas",c:"t-green"},{t:"N+1",c:"t-red"},{t:"Grid Parallel",c:"t-blue"}],
+        desc:"Industrial-scale greenhouse and vertical-farm complexes run multiple CHP engines with heat storage tanks, often exporting power or selling grid services. Redundancy matters: crop loss from a failure at this scale is very expensive.",
+        alerts:[AL.leadtime,AL.gasRisk],
+        tip:"Offer a full energy model: kWh, heat, CO₂ and grid-services revenue side by side. That separates you from equipment-only vendors.",
+        fuel:"Natural Gas",rating:"Continuous / CHP",mobility:"Fixed"};
+    }},
 
-  "Industrial":{
-    icon:"🏭",
-    equipment:[
-      {icon:"💡",label:"Facility Lighting",kw:20},
-      {icon:"🖥️",label:"Controls / Office",kw:50},
-      {icon:"⚙️",label:"Small Motors",kw:100},
-      {icon:"🏗️",label:"Conveyor Systems",kw:200},
-      {icon:"🔨",label:"Heavy Machinery",kw:400},
-      {icon:"🖥️",label:"Data Center",kw:600},
-      {icon:"🏭",label:"Full Factory",kw:1000}
+  "Healthcare":{icon:"🏥",duty:'standby',isNew:true,
+    loads:[
+      {icon:"🚨",label:"Life-safety branch",kw:20,def:1},
+      {icon:"🫀",label:"Critical branch (ICU/OR/ED)",kw:150,def:1},
+      {icon:"🫁",label:"Medical air & vacuum",hp:25,def:1},
+      {icon:"🧊",label:"Chiller",hp:150,def:0},
+      {icon:"🛗",label:"Elevator",hp:30,def:1},
+      {icon:"🩻",label:"Imaging (CT / MRI)",kw:120,def:0},
+      {icon:"🍲",label:"Kitchen & laundry",kw:50,def:0},
+      {icon:"💾",label:"IT / EHR servers",kw:30,def:1},
     ],
+    ask:["Which essential electrical system branches (life safety, critical, equipment) must the generator carry?","How many hours of on-site fuel do we need (many hospitals target 96 h)?","How will we load-bank test to meet monthly and 36-month requirements?"],
+    getLogic(kw){
+      if(kw<=150) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"NFPA 99 / 110",c:"t-red"}],
+        desc:"Clinics, dialysis centers, long-term care and outpatient surgery. NFPA 99 sets the essential electrical system category by risk to patients; long-term care and ambulatory surgery often need Level 1 emergency power. Many jurisdictions now mandate backup power in nursing homes.",
+        alerts:[AL.nfpaL1],
+        tip:"Compliance sells. Bundle ATSs, remote annunciation, monthly test logs and an annual service plan that keeps inspection paperwork audit-ready.",
+        fuel:"Diesel",rating:"Standby",mobility:"Fixed"};
+      if(kw<=1000) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"NFPA 110 Level 1",c:"t-red"},{t:"Separate ATS per branch",c:"t-yellow"}],
+        desc:"Community hospitals. NEC 517 requires separate transfer switches for the life-safety, critical and equipment branches. Imaging equipment (MRI, CT) needs low voltage dip, so confirm the equipment manufacturer's source-impedance and transient limits before sizing.",
+        alerts:[AL.nfpaL1,AL.nonlinear],
+        tip:"Ask for the most recent CMS / accreditation survey findings. Generator testing deficiencies are common and create urgency.",
+        fuel:"Diesel",rating:"Standby",mobility:"Fixed"};
+      return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / HVO",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"NFPA 110 Level 1",c:"t-red"}],
+        desc:"Regional hospitals and medical campuses: paralleled sets with priority load-add and load-shed, closed-transition ATSs for testing without patient disruption, and 96-hour fuel autonomy planning for extended disasters.",
+        alerts:[AL.nfpaL1,AL.leadtime],
+        tip:"Hospital projects are long relationships. Lead with commissioning, witnessed load-bank testing and 24/7 service coverage.",
+        fuel:"Diesel / HVO",rating:"Standby",mobility:"Fixed"};
+    }},
+
+  "Industrial":{icon:"🏭",duty:'standby',
+    loads:[
+      {icon:"💡",label:"Facility lighting",kw:30,def:1},
+      {icon:"🖥️",label:"Controls / office",kw:20,def:1},
+      {icon:"💨",label:"Air compressor",hp:100,def:1},
+      {icon:"➡️",label:"Conveyor line",hp:30,def:1},
+      {icon:"🧪",label:"Injection molder",kw:150,def:0},
+      {icon:"🔥",label:"Welding bank",kw:80,def:0},
+      {icon:"⚙️",label:"CNC machines",kw:60,def:0},
+      {icon:"🧊",label:"Process chiller",hp:75,def:0},
+    ],
+    ask:["Which processes lose product if power drops (molding, casting, curing)?","What starting method do our largest motors use?","Will the generator also run for peak shaving or demand response?"],
     getLogic(kw){
       if(kw<=200) return{
-        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"3-Phase 480V",c:"t-yellow"}],
-        desc:"Light-to-medium industrial loads include process control systems, smaller conveyor motors, and critical IT infrastructure. Even a 30-minute power outage in continuous manufacturing (injection molding, casting, chemical processes) can result in massive material loss.",
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"3-Phase 480/600V",c:"t-yellow"}],
+        desc:"Light-to-medium industrial: controls, compressors, conveyors and critical IT. In continuous processes (injection molding, casting, curing) a short outage can scrap entire batches and damage tooling.",
         alerts:[],
-        tip:"Ask about production line criticality. In high-value continuous manufacturing environments, a single outage can cost more than the generator. Position standby backup as production insurance, not just a utility expense.",
-        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
-      if(kw<=600) return{
-        tags:[{t:"Standby / Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"Class H Alternator",c:"t-yellow"}],
-        desc:"Heavy industrial loads feature intense inductive demand from large conveyors, welding banks, and processing equipment. Class H alternator insulation handles significant harmonic distortion from non-linear loads. Industrial voltage dip tolerance is typically 20% maximum.",
-        alerts:[{type:"a-tip",title:"Motor Starting Strategy",text:"Across-the-line (direct-on-line) motor starts require a much larger alternator to absorb the inrush current. VFDs reduce starting demand by up to 60% — potentially allowing a significantly smaller and less expensive generator."}],
-        tip:"Proposing VFDs alongside the generator adds real value and often reduces total project cost. Show the math: smaller generator + VFDs frequently costs less than an oversized generator alone — this approach closes deals by improving project economics.",
-        fuel:"Diesel",rating:"Standby / Continuous",mobility:"Fixed"
-      };
+        tip:"Ask what one outage costs in scrap and downtime. Position backup as production insurance, not a utility expense.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"};
+      if(kw<=750) return{
+        tags:[{t:"Standby / Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"PMG Alternator",c:"t-yellow"}],
+        desc:"Heavy industrial loads with large motors, welders and drives. Harmonic distortion from drives and welders needs an alternator with a PMG exciter and adequate sub-transient reactance. Typical voltage-dip tolerance is 15–20% for sensitive processes.",
+        alerts:[AL.nonlinear],
+        tip:"Propose VFDs or soft starters alongside the generator and show the math: a smaller genset plus drives often costs less than an oversized genset.",
+        fuel:"Diesel",rating:"Standby / Prime",mobility:"Fixed"};
       return{
-        tags:[{t:"Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"EPA Tier 4 Final",c:"t-red"},{t:"N+1 Required",c:"t-red"}],
-        desc:"Heavy manufacturing complexes and data centers require continuous, uninterruptible power. N+1 paralleled configurations are mandatory to eliminate single points of failure. Medium-voltage interconnection (4,160V or higher) is standard at this power scale.",
-        alerts:[{type:"a-warning",title:"EPA Tier 4 Final Compliance",text:"Non-emergency diesel units over 560 kW require urea-based Selective Catalytic Reduction (SCR) and Diesel Particulate Filter (DPF) aftertreatment systems. Factor compliance infrastructure and ongoing DEF fluid costs into the project budget."}],
-        tip:"At this scale, recommend a full power system study including load flow analysis and harmonic study. Position yourself as a total power solutions provider, not just a generator vendor — system integration services carry premium margins.",
-        fuel:"Diesel",rating:"Continuous",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Continuous",c:"t-blue"},{t:"Diesel / Gas",c:"t-amber"},{t:"Medium Voltage",c:"t-yellow"},{t:"N+1",c:"t-red"}],
+        desc:"Heavy manufacturing complexes. N+1 paralleled sets, often at medium voltage (4.16–13.8 kV) to reduce cable and switchgear cost. Plants using generation for peak shaving should evaluate gas engines for lower fuel cost and easier permitting.",
+        alerts:[AL.tier4,AL.leadtime],
+        tip:"Recommend a power system study (load flow, short circuit, harmonics, arc flash). Positioning as a solutions provider wins at this scale.",
+        fuel:"Diesel / Natural Gas",rating:"Continuous",mobility:"Fixed"};
+    }},
 
-  "Mining":{
-    icon:"⛏️",
-    equipment:[
-      {icon:"💡",label:"Surface Lighting",kw:20},
-      {icon:"🖥️",label:"Control Room",kw:50},
-      {icon:"💨",label:"Basic Ventilation",kw:100},
-      {icon:"🪨",label:"Rock Crusher",kw:200},
-      {icon:"🌬️",label:"Deep Ventilation",kw:400},
-      {icon:"⛏️",label:"Drill Rig",kw:600},
-      {icon:"🏭",label:"Full Mine Site",kw:1000}
+  "Mining":{icon:"⛏️",duty:'prime',
+    loads:[
+      {icon:"💡",label:"Surface lighting",kw:20,def:1},
+      {icon:"🏠",label:"Camp & control room",kw:50,def:1},
+      {icon:"🌬️",label:"Ventilation fan",hp:200,def:0},
+      {icon:"🪨",label:"Crusher",hp:300,def:0},
+      {icon:"💧",label:"Dewatering pump",hp:150,def:0},
+      {icon:"➡️",label:"Conveyor",hp:100,def:0},
+      {icon:"⛏️",label:"Electric drill rig",kw:400,def:0},
+      {icon:"🔧",label:"Workshop",kw:40,def:1},
     ],
+    ask:["Is this off-grid prime power or backup to a utility feed?","What are the ventilation (life-safety) loads underground?","What is our cost of downtime per hour?"],
     getLogic(kw){
-      if(kw<=100) return{
+      if(kw<=150) return{
         tags:[{t:"Prime",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"Off-Grid",c:"t-green"}],
-        desc:"Small surface mining operations and exploration camps rely entirely on diesel prime power. These remote operations have no utility grid connection — the generator is the foundational power infrastructure, not a backup system.",
-        alerts:[{type:"a-warning",title:"Prime Rated Only — No Exceptions",text:"Mining operations run 24/7/365. Standby-rated units will fail under continuous load. Only prime or continuous rated machines are appropriate for any mining application."}],
-        tip:"Exploration camps move frequently. Recommend towable prime diesel units that can be repositioned as operations expand. Emphasize fuel tank capacity — remote resupply logistics directly determine which tank size is required.",
-        fuel:"Diesel",rating:"Prime",mobility:"Mobile / Fixed"
-      };
-      if(kw<=600) return{
-        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"3-Phase 480V",c:"t-yellow"}],
-        desc:"Underground ventilation systems account for 40–50% of total mine energy consumption. A single 75 kW ventilation fan in a 12-hour shift cycle consumes 423+ kWh. Ventilation is life-safety infrastructure — it clears toxic blasting gases and diesel particulate matter.",
-        alerts:[{type:"a-tip",title:"Ventilation is Life-Safety",text:"Size all ventilation loads first, then add every other load on top. Underground ventilation for post-blast gas clearance is a direct safety requirement — it cannot be compromised by inadequate generation capacity."}],
-        tip:"Mine ventilation is life-safety infrastructure — decision makers respond to safety and liability arguments, not just uptime metrics. Position the generator as protecting workers first, equipment second. This reframes the conversation and often justifies premium systems.",
-        fuel:"Diesel",rating:"Prime / Continuous",mobility:"Fixed"
-      };
+        desc:"Exploration camps and small surface operations rely on diesel prime power. Camps move often, so skid or towable units with large fuel tanks and remote monitoring are preferred.",
+        alerts:[{type:"a-warning",title:"Prime-rated only",text:"Mining runs 24/7. Standby-rated units are not designed for unlimited hours. Use prime or continuous ratings for every mining application."},AL.hybrid],
+        tip:"Fuel logistics drive total cost. Quote tank autonomy (days between deliveries) and hybrid fuel savings alongside the genset price.",
+        fuel:"Diesel / HVO",rating:"Prime",mobility:"Mobile / Skid"};
+      if(kw<=750) return{
+        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"Ventilation = Life Safety",c:"t-red"}],
+        desc:"Underground ventilation can account for up to 40–50% of a mine's energy use. A single 75 kW fan running a 12-hour shift uses about 900 kWh. Ventilation clears blasting fumes and diesel particulate, which makes it life-safety infrastructure.",
+        alerts:[{type:"a-tip",title:"Size ventilation first",text:"Put all ventilation and dewatering loads in first, then add production loads. Fans on VFDs (ventilation on demand) cut both energy and starting kVA."}],
+        tip:"Lead with worker safety and regulatory compliance. Mine managers respond to safety and liability arguments, which often justifies premium redundancy.",
+        fuel:"Diesel",rating:"Prime / Continuous",mobility:"Fixed"};
       return{
-        tags:[{t:"Continuous",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"EPA Tier 4 Final",c:"t-red"}],
-        desc:"Large mining operations with full ventilation networks, multiple crushers, and ore processing require mega-watt class continuous power. N+1 redundancy is non-negotiable — mine downtime typically costs $100,000+ per hour.",
-        alerts:[{type:"a-warning",title:"Calculate Downtime Cost First",text:"Mine downtime costs $100K–$500K+/hour depending on operation scale. Present N+1 redundancy cost against expected downtime prevention savings. The ROI on redundancy becomes immediately obvious and closes premium deals."}],
-        tip:"Always calculate the customer's cost of mine downtime per hour before presenting redundancy options. Generator N+1 ROI becomes immediately compelling when set against production loss figures — use this number to close premium paralleling configurations.",
-        fuel:"Diesel",rating:"Continuous",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Continuous",c:"t-blue"},{t:"Diesel / Gas",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"Hybrid / Solar-Ready",c:"t-green"}],
+        desc:"Large off-grid mines run multi-MW power stations. Many now combine diesel or gas gensets with solar and battery storage to cut fuel use. N+1 redundancy is standard, since downtime at a large mine can cost six figures per hour.",
+        alerts:[AL.tier4,AL.leadtime],
+        tip:"Calculate the customer's cost of downtime per hour before presenting redundancy. Against that number, N+1 sells itself.",
+        fuel:"Diesel / Natural Gas",rating:"Continuous",mobility:"Fixed"};
+    }},
 
-  "Municipal":{
-    icon:"🏛️",
-    equipment:[
-      {icon:"🚦",label:"Traffic Signals",kw:10},
-      {icon:"💡",label:"Emergency Lights",kw:20},
-      {icon:"🚓",label:"Police Station",kw:50},
-      {icon:"🚒",label:"Fire Station",kw:80},
-      {icon:"📞",label:"911 Center",kw:100},
-      {icon:"🏫",label:"Emergency Shelter",kw:200},
-      {icon:"🏥",label:"Medical Facility",kw:400},
-      {icon:"🏛️",label:"Full Emergency Grid",kw:700}
+  "Municipal & Emergency":{icon:"🏛️",duty:'standby',
+    loads:[
+      {icon:"🚦",label:"Traffic signals",kw:3,def:1},
+      {icon:"📡",label:"Radio / comms tower",kw:10,def:1},
+      {icon:"📞",label:"911 / dispatch center",kw:40,def:0},
+      {icon:"🚓",label:"Police station",kw:60,def:0},
+      {icon:"🚒",label:"Fire station",kw:40,def:0},
+      {icon:"🏫",label:"Emergency shelter",kw:150,def:0},
+      {icon:"💧",label:"Lift station pump",hp:30,def:0},
+      {icon:"⛽",label:"Fuel island & yard",kw:10,def:0},
     ],
+    ask:["Which facilities are NFPA 110 Level 1 (life safety) versus Level 2?","Is there grant funding (e.g. FEMA hazard mitigation) for resilience projects?","Do we need portable units we can redeploy after disasters?"],
     getLogic(kw){
       if(kw<=50) return{
         tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"NFPA 110 Level 2",c:"t-yellow"}],
-        desc:"Small municipal infrastructure including remote signal stations and community water pump stations. Basic standby protection with standard restoration times. Compliance documentation should always be included in the project deliverable.",
+        desc:"Signals, radio sites, small pump stations and community buildings. Level 2 systems allow up to 60 seconds for restoration. Include compliance documentation and test procedures in the deliverable.",
         alerts:[],
-        tip:"Municipal procurement is driven by annual budget cycles. Identify upcoming capital expenditure windows. NFPA 110 compliance requirements create a procurement mandate — use this regulatory language directly with decision-makers to accelerate approvals.",
-        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
-      if(kw<=200) return{
+        tip:"Municipal procurement follows budget cycles. Find the capital-plan window, and use code language (NFPA 110, NEC 701) to make the need non-optional.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"};
+      if(kw<=250) return{
         tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"NFPA 110 Level 1",c:"t-red"}],
-        desc:"Police stations, fire stations, and 911 emergency call centers are governed by NFPA 110 Level 1. Emergency power supply systems (EPSS) must restore power within 10 seconds. Monthly run tests and 100–200 hour service intervals are legally mandated and documented.",
-        alerts:[{type:"a-warning",title:"NFPA 110 Level 1 Mandatory",text:"911 centers and fire stations require power restoration within 10 seconds. Ensure ATS specifications fully meet NFPA 110 Level 1 requirements. Monthly test documentation must be maintained and available for inspection."}],
-        tip:"NFPA 110 Level 1 compliance packages command premium pricing. Bundle the generator with a certified ATS, monthly test scheduling, and a multi-year maintenance contract. This is a relationship sale with significant ongoing service revenue.",
-        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
-      if(kw<=700) return{
-        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"NFPA 110 Level 1",c:"t-red"},{t:"Towable Cross-Sell",c:"t-green"}],
-        desc:"Large emergency shelters, medical facilities, and multi-building municipal campuses require substantial standby power. Towable generators are a high-value cross-sell — they can be deployed anywhere in the jurisdiction for disaster response.",
-        alerts:[{type:"a-info",title:"Natural Gas Pipeline Vulnerability",text:"In disaster-prone regions, earthquakes and severe flooding can sever gas pipelines. For emergency power applications, dual-fuel capability or diesel-primary ensures reliability when the utility fails for non-electrical reasons."}],
-        tip:"Propose a complete disaster portfolio: permanent standby for fixed facilities + towable diesel for mobile response. Municipalities value comprehensive disaster preparedness packages. This framing often enables a significantly larger total sale.",
-        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed + Mobile"
-      };
+        desc:"Police and fire stations, and 911 centers. Emergency power supply systems for these facilities are typically Level 1 / Type 10 (10-second restoration), with documented monthly testing and maintenance.",
+        alerts:[AL.nfpaL1],
+        tip:"Bundle a certified ATS, test scheduling and a multi-year maintenance contract. This is a relationship sale with recurring service revenue.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"};
+      if(kw<=750) return{
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"NFPA 110 Level 1",c:"t-red"},{t:"Mobile Fleet",c:"t-green"}],
+        desc:"Shelters, emergency operations centers and multi-building campuses. Pre-wired generator docking stations or quick-connect panels let towable units be deployed anywhere in the jurisdiction after a disaster.",
+        alerts:[AL.gasRisk],
+        tip:"Propose a disaster portfolio: permanent standby for fixed facilities, plus towable units and docking stations for mobile response. It often unlocks a larger total project.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed + Mobile"};
       return{
-        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"NFPA 110 Level 1",c:"t-red"}],
-        desc:"Full municipal emergency grid serving hospitals, emergency operations centers, and multi-facility critical infrastructure. N+1 paralleled configurations are mandatory — life-safety systems cannot tolerate a single point of failure under any circumstances.",
-        alerts:[{type:"a-warning",title:"Paralleling Mandatory for Life-Safety",text:"For life-safety loads exceeding 1,000 kW, always recommend three paralleled 500 kW units over one 1,000 kW unit. This provides N+1 redundancy and allows scheduled maintenance without putting the facility at risk."}],
-        tip:"Hospital-grade systems require full commissioning, witnessed load-bank testing, and certified compliance documentation. Position this as a long-term partnership with recurring service revenue — not a transactional equipment sale.",
-        fuel:"Diesel",rating:"Standby",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / HVO",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"Microgrid-Ready",c:"t-green"}],
+        desc:"Full municipal critical-infrastructure grids and resilience hubs. Paralleled sets increasingly operate within microgrids alongside solar and batteries, with islanding controls for long outages.",
+        alerts:[AL.nfpaL1,AL.leadtime],
+        tip:"Frame it as community resilience. Microgrid-ready designs align with grant programs and council priorities.",
+        fuel:"Diesel / HVO",rating:"Standby",mobility:"Fixed"};
+    }},
 
-  "Oil & Gas":{
-    icon:"🛢️",
-    equipment:[
-      {icon:"💡",label:"Rig Lighting",kw:20},
-      {icon:"🖥️",label:"Pump Controls",kw:50},
-      {icon:"⛽",label:"Small Well Pump",kw:80},
-      {icon:"🔩",label:"Well Pad Systems",kw:100},
-      {icon:"🚀",label:"Booster Station",kw:200},
-      {icon:"⛽",label:"Drilling Rig",kw:500},
-      {icon:"🏭",label:"Full Platform",kw:1000}
+  "Oil & Gas":{icon:"🛢️",duty:'prime',
+    loads:[
+      {icon:"💡",label:"Pad lighting",kw:10,def:1},
+      {icon:"📡",label:"SCADA & comms",kw:5,def:1},
+      {icon:"🧪",label:"Chemical injection",hp:5,def:1},
+      {icon:"⛽",label:"ESP / well pump",hp:100,def:0},
+      {icon:"💧",label:"Water transfer pump",hp:75,def:0},
+      {icon:"🏠",label:"Camp / housing",kw:60,def:0},
+      {icon:"🌀",label:"Electric gas compressor",hp:400,def:0},
+      {icon:"🏗️",label:"Rig top drive & drawworks",kw:800,def:0},
     ],
+    ask:["Is field or associated gas available to fuel the generator?","Will the genset sit inside a classified hazardous area?","What are the site's flaring and emissions limits?"],
     getLogic(kw){
       if(kw<=200) return{
-        tags:[{t:"Prime",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"Class I Div 1",c:"t-red"},{t:"Off-Grid",c:"t-green"}],
-        desc:"Remote well pads use 50–200 kW units for pump controls, lighting, and SCADA communications. All equipment must meet Class I, Division 1 hazardous location standards to prevent ignition of ambient combustible gases — standard commercial units are not permitted.",
-        alerts:[{type:"a-warning",title:"Hazardous Location Certification Required",text:"All generator enclosures, switchgear, and exhaust systems on active well pads must meet Class I, Division 1 (or Div 2) NEC electrical safety codes. Non-certified units cannot be legally deployed in active production zones."}],
-        tip:"Always ask about on-site flare gas availability. Natural gas generators configured for associated gas can eliminate fuel delivery costs entirely — a powerful economic argument for remote pad operators. This often becomes the decisive factor.",
-        fuel:"Diesel / Nat. Gas (Flare Gas)",rating:"Prime",mobility:"Semi-Fixed"
-      };
-      if(kw<=800) return{
-        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"Class I Div 1",c:"t-red"}],
-        desc:"Major drilling rigs and pipeline booster stations operate continuously under extreme temperature and dust conditions. Prime power ratings and hazardous location certifications are mandatory. Dual-fuel capability enables use of site-produced associated gas.",
-        alerts:[],
-        tip:"Pipeline booster operators are extremely sensitive to fuel cost. Calculate 5-year fuel consumption savings for natural gas vs diesel and present as a line-item ROI. The savings case often closes the deal on a premium dual-fuel system.",
-        fuel:"Diesel / Natural Gas",rating:"Prime / Continuous",mobility:"Fixed"
-      };
+        tags:[{t:"Prime",c:"t-blue"},{t:"Field Gas / Diesel",c:"t-amber"},{t:"Hazardous Area",c:"t-red"},{t:"Off-Grid",c:"t-green"}],
+        desc:"Remote well pads: pump controls, chemical injection, lighting and SCADA. Equipment inside a classified area must be rated for it (Class I Div 1/2 or Zone 1/2 per NEC 500/505, CEC Section 18). Most gensets are located outside the classified zone, or a Div 2/Zone 2 package is specified.",
+        alerts:[{type:"a-warning",title:"Hazardous-location review",text:"Confirm the area classification drawing before siting the generator, exhaust and switchgear. Non-certified equipment cannot be placed inside the classified boundary."}],
+        tip:"Ask about associated gas. Gas-fueled units can eliminate diesel deliveries and reduce flaring, which helps with tightening methane rules.",
+        fuel:"Field Gas / Diesel",rating:"Prime",mobility:"Skid"};
+      if(kw<=1000) return{
+        tags:[{t:"Prime / Continuous",c:"t-blue"},{t:"Gas / Bi-Fuel",c:"t-amber"},{t:"Hazardous Area",c:"t-red"}],
+        desc:"Drilling rigs, pipeline booster and compression stations running continuously in extreme temperatures and dust. Bi-fuel (diesel plus gas substitution) and dedicated gas gensets cut fuel cost and emissions. Electrifying frac and compression with gas gensets is a growing trend.",
+        alerts:[AL.tier4],
+        tip:"Operators are extremely fuel-cost sensitive. Present 5-year fuel savings of gas or bi-fuel vs diesel as a line-item ROI.",
+        fuel:"Natural Gas / Bi-Fuel",rating:"Prime / Continuous",mobility:"Skid / Fixed"};
       return{
-        tags:[{t:"Continuous",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"N+1 Redundancy",c:"t-red"},{t:"Class I Div 1",c:"t-red"}],
-        desc:"Major drilling platforms and processing facilities require mega-watt class continuous power with full redundancy. Drilling rig downtime costs $50,000–$500,000/day — at this scale the generator system is a direct revenue-protection asset.",
-        alerts:[{type:"a-warning",title:"Downtime Cost is the Closing Argument",text:"Drilling rig downtime ranges from $50K to $500K per day depending on operation scale and contract. Present N+1 redundancy cost against expected downtime prevention savings to justify premium paralleling configurations."}],
-        tip:"At this scale, include remote monitoring, predictive maintenance programs, and spare parts inventory in your proposal. Position as a total power management partnership — the initial generator sale opens a long-term high-value service contract.",
-        fuel:"Diesel / Natural Gas",rating:"Continuous",mobility:"Fixed"
-      };
-    }
-  },
+        tags:[{t:"Continuous",c:"t-blue"},{t:"Gas / Diesel",c:"t-amber"},{t:"N+1",c:"t-red"},{t:"Hazardous Area",c:"t-red"}],
+        desc:"Major drilling platforms, processing facilities and e-frac fleets require megawatt-class continuous power with redundancy. Downtime costs tens to hundreds of thousands of dollars per day, so the power system is a revenue-protection asset.",
+        alerts:[AL.leadtime],
+        tip:"Include remote monitoring, predictive maintenance and spares in the proposal. The equipment sale opens a long service contract.",
+        fuel:"Natural Gas / Diesel",rating:"Continuous",mobility:"Fixed / Skid"};
+    }},
 
-  "Water / Wastewater":{
-    icon:"💧",
-    equipment:[
-      {icon:"🖥️",label:"Control Room",kw:20},
-      {icon:"💧",label:"Small Lift Pump",kw:50},
-      {icon:"☀️",label:"UV Treatment",kw:100},
-      {icon:"💨",label:"Aeration Blower",kw:150},
-      {icon:"🔄",label:"Large Lift Pump",kw:300},
-      {icon:"🧬",label:"BAF System",kw:500},
-      {icon:"🏭",label:"Full Treatment Plant",kw:1000}
+  "Water / Wastewater":{icon:"💧",duty:'standby',
+    loads:[
+      {icon:"🖥️",label:"Controls / SCADA",kw:10,def:1},
+      {icon:"💧",label:"Small lift pump",hp:25,def:1},
+      {icon:"🔄",label:"Large lift pump",hp:150,def:0},
+      {icon:"💨",label:"Aeration blower",hp:200,def:0},
+      {icon:"☀️",label:"UV disinfection",kw:60,def:0},
+      {icon:"🌀",label:"Sludge dewatering",hp:50,def:0},
+      {icon:"🧪",label:"Chemical feed",kw:5,def:1},
+      {icon:"🏢",label:"Lab & admin",kw:25,def:0},
     ],
+    ask:["What is the largest pump, and how is it started?","What do our discharge permit and regulator require for backup power?","Portable units with quick-connects, or permanent standby at each station?"],
     getLogic(kw){
       if(kw<=100) return{
         tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"Motor Start Risk",c:"t-red"}],
-        desc:"Small lift pumping stations and remote water supply systems. Even at this scale, motor-starting inrush current from submersible pumps is 6–7× the running current. Starting kVA requirements must be calculated carefully to prevent voltage collapse during pump initiation.",
-        alerts:[{type:"a-warning",title:"Wet-Stacking Risk at Low Running Load",text:"If the generator is oversized to handle pump starting, steady-state running load may drop below 35% of rated capacity — triggering wet-stacking in diesel engines. A soft-starter reduces starting demand by 40% and mitigates this risk."}],
-        tip:"Water utilities require absolute reliability and often have regulatory mandates for emergency power (EPA, state DEQ). Compliance requirements create a clear procurement path — use regulatory language with decision-makers to accelerate the sale.",
-        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"
-      };
+        desc:"Lift stations and small water systems. Submersible pump starting draws about 6× running current. A generator sized only on running kW will stall the pump, but one oversized for starting will run lightly loaded most of the time.",
+        alerts:[{type:"a-warning",title:"Wet-stacking at light load",text:"If the genset is oversized for starting, steady load can fall below 30% of rating, which glazes cylinders and builds carbon in diesels. Soft starters or VFDs fix this, and so does a monthly load-bank exercise."}],
+        tip:"Utilities face regulatory mandates for backup power. Use that language. Quick-connect panels plus a shared portable fleet are a cost-effective pitch for many small stations.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed / Portable"};
       if(kw<=500) return{
-        tags:[{t:"Standby / Continuous",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"VFD Recommended",c:"t-green"},{t:"Wet-Stack Risk",c:"t-red"}],
-        desc:"Large lift pumps, aeration blowers, and UV disinfection systems create the most difficult motor-starting challenge in power generation. A 100 HP pump started across-the-line may require a generator 3–6× larger than the steady-state running watts alone.",
+        tags:[{t:"Standby",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"VFD Recommended",c:"t-green"}],
+        desc:"Large lift pumps, aeration blowers and UV systems create the toughest motor-starting challenge in power generation. A 150 hp pump started across-the-line may need a generator two to three times larger than its running load alone.",
         alerts:[
-          {type:"a-warning",title:"Critical Wet-Stacking Risk",text:"Example scenario: Generator sized at 500 kW to start a large pump, but steady-state running load is only 80 kW = 16% load factor. This destroys the diesel engine through cylinder glazing and exhaust slobber. Never allow this configuration."},
-          {type:"a-success",title:"VFD is the Solution",text:"A Variable Frequency Drive (VFD) reduces pump starting demand by up to 60%. This allows a properly-sized ~130 kW generator to start the pump AND run at a healthy 80% load factor — completely eliminating wet-stacking risk and likely reducing total project cost."}
-        ],
-        tip:"The wet-stacking conversation is your credibility-building moment. Show the math: smaller generator + VFD typically costs less than an oversized unit alone while eliminating an engine-destroying failure mode. This technical insight closes premium deals.",
-        fuel:"Diesel / Natural Gas",rating:"Standby / Continuous",mobility:"Fixed"
-      };
+          {type:"a-warning",title:"Classic oversizing trap",text:"Sizing a 300 kW genset to start one large pump that runs at 125 kW leaves the engine at about 40% load. Add a second, smaller duty pump and you're under 30%, which means wet-stacking."},
+          {type:"a-success",title:"VFDs solve it",text:"With VFDs the same pumps start at about 1.2× running kVA. The generator can drop one or two sizes and run in its healthy 50–80% load range."},
+          AL.nonlinear],
+        tip:"The wet-stacking conversation is your credibility moment. Show both sizing results side by side (DOL vs VFD) using the builder.",
+        fuel:"Diesel / Natural Gas",rating:"Standby",mobility:"Fixed"};
       return{
-        tags:[{t:"Continuous",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"},{t:"VFD Mandatory",c:"t-green"}],
-        desc:"Full-scale municipal water treatment plants with biological active filtration (BAF) systems require continuous, uninterruptible power. BAF systems cannot be interrupted mid-cycle — disruption triggers regulatory violations and takes days to restart biological treatment processes.",
+        tags:[{t:"Standby / Continuous",c:"t-blue"},{t:"Diesel / Nat. Gas",c:"t-amber"},{t:"N+1 Paralleling",c:"t-red"}],
+        desc:"Full treatment plants. Biological processes and disinfection cannot stop without risking permit violations and days of recovery. N+1 paralleled sets with priority load control are the norm, and many plants run digester-gas engines (CHP) continuously.",
         alerts:[
-          {type:"a-warning",title:"N+1 Redundancy is Mandatory",text:"Water treatment discharge permits have strict regulatory timelines. Any power interruption that disrupts treatment processes can trigger EPA violations with substantial fines. N+1 paralleling is the only acceptable design for full treatment facilities."},
-          {type:"a-tip",title:"Natural Gas for Large Continuous Plants",text:"Large continuous-duty water treatment plants often justify natural gas for lower maintenance burden and cleaner emissions — particularly important in urban locations with strict air quality regulations and community proximity."}
-        ],
-        tip:"Align your proposal with the facility's environmental compliance calendar and permit renewal cycle. Offer commissioning support, load-bank test certificates, and compliance documentation as part of the package — this positions you as a compliance partner, not just an equipment vendor.",
-        fuel:"Diesel / Natural Gas",rating:"Continuous",mobility:"Fixed"
-      };
-    }
-  }
+          {type:"a-tip",title:"Biogas opportunity",text:"Plants with anaerobic digesters can fuel CHP engines with biogas, cutting power bills and generating renewable-fuel credits in some markets."},
+          AL.leadtime],
+        tip:"Align the proposal with the permit and capital-plan calendar. Offer commissioning, load-bank certificates and compliance documentation as a package.",
+        fuel:"Diesel / Natural Gas / Biogas",rating:"Standby / Continuous",mobility:"Fixed"};
+    }},
 };
 
-/* ---------- STATE ---------- */
-let industry = "Commercial";
-let idx = 5; // default 50 kW
+/* ═══════════════════ STATE ═══════════════════ */
+const state = {
+  industry:"Commercial", mode:"build", idx:SIZES.indexOf(50), view:"buyer", units:"metric",
+  qty:{}, custom:[], alt:0, amb:35, growth:0.2, duty:"auto", start:"dol",
+};
+const $ = id => document.getElementById(id);
+const fmt = (n, d=0) => Number(n).toLocaleString(undefined,{maximumFractionDigits:d, minimumFractionDigits:d});
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* ---------- INIT ---------- */
+function defaultQty(){
+  const q = {};
+  IND[state.industry].loads.forEach((l,i) => q[i] = l.def || 0);
+  return q;
+}
+
+/* ═══════════════════ SIZING ENGINE ═══════════════════ */
+function loadKw(l){ return l.hp ? l.hp * HP_KW : l.kw; }
+
+function allLoads(){
+  const preset = IND[state.industry].loads.map((l,i) => ({...l, qty: state.qty[i] || 0}));
+  return preset.concat(state.custom.map(c => ({...c, qty: c.qty})));
+}
+
+function derateFactor(){
+  const altM = state.units === 'us' ? state.alt * 0.3048 : state.alt;
+  const ambC = state.units === 'us' ? (state.amb - 32) * 5/9 : state.amb;
+  const altD = Math.max(0, altM - 1000) / 100 * 0.01;     // ~1% per 100 m above 1,000 m
+  const tmpD = Math.max(0, ambC - 40) * 0.004;            // ~2% per 5 °C above 40 °C
+  return {f: Math.max(0.5, 1 - altD - tmpD), altD, tmpD};
+}
+
+function dutyFor(){
+  return state.duty === 'auto' ? IND[state.industry].duty : state.duty;
+}
+
+function sizeFor(startMethod){
+  const loads = allLoads().filter(l => l.qty > 0);
+  const runKw = loads.reduce((s,l) => s + loadKw(l) * l.qty, 0);
+  const runKva = runKw / PF;
+  const motors = loads.filter(l => l.hp);
+  const largest = motors.reduce((m,l) => (!m || l.hp > m.hp) ? l : m, null);
+  const skva = largest ? largest.hp * START_KVA_PER_HP[startMethod] : 0;
+  const largestRunKva = largest ? loadKw(largest) / PF : 0;
+  const duty = dutyFor();
+  const der = derateFactor();
+  const reqRunKw = runKw * (1 + state.growth) / LOAD_TARGET[duty];
+  const reqStartKva = (runKva - largestRunKva) + skva / SURGE_K;
+  const reqStartKw = reqStartKva * PF;
+  const reqKw = Math.max(reqRunKw, reqStartKw) / der.f;
+  const size = SIZES.find(s => s >= reqKw) || null;
+  return {loads, runKw, runKva, largest, skva, reqRunKw, reqStartKw, reqKw, size, der, duty,
+          governedBy: reqStartKw > reqRunKw ? 'start' : 'run', lf: size ? runKw / size : 0};
+}
+
+/* ═══════════════════ INIT ═══════════════════ */
 function init(){
-  buildGrid();
+  $('yr').textContent = new Date().getFullYear();
+  readHash();
+  if(!Object.keys(state.qty).length) state.qty = defaultQty();
+  buildIndustryGrid();
   setupSlider();
+  bindUI();
+  syncInputs();
   render();
 }
 
-function buildGrid(){
-  const g = document.getElementById("indGrid");
-  g.innerHTML = "";
-  Object.keys(IND).forEach(name => {
-    const d = IND[name];
-    const b = document.createElement("button");
-    b.className = "ind-btn" + (name === industry ? " active" : "");
-    b.innerHTML = `<span class="ind-icon">${d.icon}</span>${name}`;
-    b.onclick = () => {
-      industry = name;
-      document.querySelectorAll(".ind-btn").forEach(x => x.classList.remove("active"));
-      b.classList.add("active");
-      render();
-    };
-    g.appendChild(b);
-  });
+function buildIndustryGrid(){
+  $('indGrid').innerHTML = Object.keys(IND).map(name => `
+    <button class="ind-btn" type="button" data-ind="${esc(name)}" aria-pressed="${name === state.industry}">
+      ${IND[name].isNew ? '<span class="ind-new">NEW</span>' : ''}
+      <span class="ind-icon" aria-hidden="true">${IND[name].icon}</span>${name}
+    </button>`).join('');
 }
 
 function setupSlider(){
-  const sl = document.getElementById("pwrSlider");
-  sl.max = POWER.length - 1;
-  sl.value = idx;
-  fillSlider(sl);
-  sl.addEventListener("input", () => {
-    idx = parseInt(sl.value);
-    fillSlider(sl);
-    render();
-  });
+  const sl = $('pwrSlider');
+  sl.max = SIZES.length - 1;
+  sl.value = state.idx;
+  $('sMin').textContent = SIZES[0] + ' kW';
+  $('sMax').textContent = fmt(SIZES[SIZES.length-1]) + ' kW';
+  fillSlider();
 }
-
-function fillSlider(sl){
+function fillSlider(){
+  const sl = $('pwrSlider');
   const p = (sl.value / sl.max) * 100;
   sl.style.background = `linear-gradient(to right,#f0a500 ${p}%,#30363d ${p}%)`;
 }
 
-/* ---------- RENDER ---------- */
-function render(){
-  const kw   = POWER[idx];
-  const d    = IND[industry];
-  const lg   = d.getLogic(kw);
-  const band = getBand(idx);
-  const pct  = Math.round((idx / (POWER.length - 1)) * 100);
-
-  /* Power number with pop animation */
-  const pn = document.getElementById("pwrNum");
-  pn.textContent = kw.toLocaleString();
-  pn.classList.remove("pop");
-  void pn.offsetWidth;
-  pn.classList.add("pop");
-
-  /* Band bar */
-  document.querySelectorAll(".band-seg").forEach((s,i) => s.classList.toggle("on", i < band.n));
-  document.getElementById("bandText").textContent = `${band.name} (${band.desc})`;
-
-  /* Equipment grid */
-  const eg = document.getElementById("eqGrid");
-  eg.innerHTML = "";
-  d.equipment.forEach(eq => {
-    const div = document.createElement("div");
-    div.className = "eq-item" + (kw >= eq.kw ? " on" : "");
-    div.innerHTML = `<span class="eq-icon">${eq.icon}</span><div class="eq-lbl">${eq.label}</div><div class="eq-kw">${eq.kw.toLocaleString()} kW+</div>`;
-    eg.appendChild(div);
+function bindUI(){
+  $('indGrid').addEventListener('click', e => {
+    const b = e.target.closest('.ind-btn'); if(!b) return;
+    state.industry = b.dataset.ind;
+    state.qty = defaultQty();
+    document.querySelectorAll('.ind-btn').forEach(x => x.setAttribute('aria-pressed', x === b));
+    render();
   });
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  document.querySelector('[data-goto="build"]').addEventListener('click', () => setMode('build'));
+  $('pwrSlider').addEventListener('input', e => { state.idx = +e.target.value; fillSlider(); render(); });
+  $('loadList').addEventListener('click', e => {
+    const b = e.target.closest('[data-step]'); if(!b) return;
+    const key = b.dataset.key, d = +b.dataset.step;
+    if(key.startsWith('c')){
+      const c = state.custom[+key.slice(1)];
+      c.qty = Math.max(0, c.qty + d);
+      if(c.qty === 0) state.custom.splice(+key.slice(1), 1);
+    } else {
+      state.qty[key] = Math.max(0, Math.min(99, (state.qty[key] || 0) + d));
+    }
+    render();
+  });
+  $('cAdd').addEventListener('click', addCustom);
+  $('cVal').addEventListener('keydown', e => { if(e.key === 'Enter') addCustom(); });
+  [['fAlt','alt',Number],['fAmb','amb',Number],['fGrowth','growth',Number],['fDuty','duty',String],['fStart','start',String]]
+    .forEach(([id,key,cast]) => $(id).addEventListener('input', e => { state[key] = cast(e.target.value) || (cast === Number ? 0 : e.target.value); render(); }));
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+    state.view = b.dataset.view; syncInputs(); render();
+  }));
+  document.querySelectorAll('[data-units]').forEach(b => b.addEventListener('click', () => {
+    if(state.units === b.dataset.units) return;
+    // convert site inputs
+    if(b.dataset.units === 'us'){ state.alt = Math.round(state.alt / 0.3048); state.amb = Math.round(state.amb * 9/5 + 32); }
+    else { state.alt = Math.round(state.alt * 0.3048); state.amb = Math.round((state.amb - 32) * 5/9); }
+    state.units = b.dataset.units; syncInputs(); render();
+  }));
+  $('btnCopy').addEventListener('click', copySummary);
+  $('btnShare').addEventListener('click', async e => {
+    const btn = e.currentTarget;
+    try { await navigator.clipboard.writeText(location.href); btn.textContent = '✓ Link copied'; }
+    catch(err){ btn.textContent = 'Copy from address bar'; }
+    setTimeout(() => btn.textContent = '🔗 Share link', 1800);
+  });
+  $('btnPrint').addEventListener('click', () => window.print());
+  $('mbGo').addEventListener('click', () => $('results').scrollIntoView({behavior:'smooth'}));
+}
 
-  /* Load bar */
-  document.getElementById("loadFill").style.width = pct + "%";
-  document.getElementById("loadPct").textContent = pct + "%";
+function addCustom(){
+  const name = $('cName').value.trim() || 'Custom load';
+  const v = parseFloat($('cVal').value);
+  if(!(v > 0)) { $('cVal').focus(); return; }
+  const type = $('cType').value;
+  state.custom.push(type === 'hp' ? {icon:'⚙️',label:name,hp:v,qty:1,custom:true} : {icon:'🔌',label:name,kw:v,qty:1,custom:true});
+  $('cName').value = ''; $('cVal').value = '';
+  render();
+}
 
-  /* Stats */
-  document.getElementById("statsRow").innerHTML = [
-    {lbl:"Fuel Type",  val:lg.fuel,    cls:"c-amber"},
-    {lbl:"Rating",     val:lg.rating,  cls:"c-blue"},
-    {lbl:"Mobility",   val:lg.mobility,cls:"c-green"}
-  ].map(s=>`<div class="stat"><div class="stat-lbl">${s.lbl}</div><div class="stat-val ${s.cls}">${s.val}</div></div>`).join("");
+function setMode(m){
+  state.mode = m;
+  $('tabBuild').setAttribute('aria-selected', m === 'build');
+  $('tabQuick').setAttribute('aria-selected', m === 'quick');
+  $('modeBuild').classList.toggle('hidden', m !== 'build');
+  $('modeQuick').classList.toggle('hidden', m !== 'quick');
+  render();
+}
 
-  /* Tags */
-  document.getElementById("tagsArea").innerHTML =
-    lg.tags.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join("");
+function syncInputs(){
+  $('fAlt').value = state.alt; $('fAmb').value = state.amb;
+  $('fGrowth').value = String(state.growth); $('fDuty').value = state.duty; $('fStart').value = state.start;
+  document.querySelectorAll('.u-alt').forEach(e => e.textContent = state.units === 'us' ? 'ft' : 'm');
+  document.querySelectorAll('.u-temp').forEach(e => e.textContent = state.units === 'us' ? '°F' : '°C');
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === state.view));
+  document.querySelectorAll('[data-units]').forEach(b => b.setAttribute('aria-pressed', b.dataset.units === state.units));
+  $('tabBuild').setAttribute('aria-selected', state.mode === 'build');
+  $('tabQuick').setAttribute('aria-selected', state.mode === 'quick');
+  $('modeBuild').classList.toggle('hidden', state.mode !== 'build');
+  $('modeQuick').classList.toggle('hidden', state.mode !== 'quick');
+}
 
-  /* Description */
-  document.getElementById("recText").textContent = lg.desc;
+/* ═══════════════════ RENDER ═══════════════════ */
+let lastSummary = '';
 
-  /* Alerts */
-  const aa = document.getElementById("alertsArea");
-  if(lg.alerts && lg.alerts.length){
-    aa.innerHTML = lg.alerts.map(a =>
-      `<div class="alert ${a.type}"><strong>${a.title}</strong>${a.text}</div>`
-    ).join("") + `<div style="height:13px"></div>`;
+function render(){
+  const d = IND[state.industry];
+  let kw, calc = null;
+
+  if(state.mode === 'build'){
+    renderLoadList();
+    calc = sizeFor(state.start);
+    kw = calc.size || SIZES[SIZES.length-1];
   } else {
-    aa.innerHTML = "";
+    kw = SIZES[state.idx];
+    const pn = $('pwrNum');
+    pn.textContent = fmt(kw);
+    pn.classList.remove('pop'); void pn.offsetWidth; pn.classList.add('pop');
+    $('pwrKva').textContent = fmt(kw / PF) + ' kVA';
   }
 
-  /* Sales tip */
-  document.getElementById("salesTip").innerHTML =
-    `<strong>Sales Strategy</strong>${lg.tip}`;
+  const lg = d.getLogic(kw);
+  const band = getBand(kw);
+  document.querySelectorAll('.band-seg').forEach((s,i) => s.classList.toggle('on', i < band.n));
+  $('bandText').textContent = band.name;
+
+  renderResult(kw, lg, band, calc);
+  renderBreakdown(calc);
+  renderEquipment(kw, calc);
+  renderStats(kw, lg);
+  renderRecommendation(kw, lg, calc);
+  writeHash();
+}
+
+function renderLoadList(){
+  const loads = allLoads();
+  const presetCount = IND[state.industry].loads.length;
+  $('loadList').innerHTML = loads.map((l,i) => {
+    const key = i < presetCount ? String(i) : 'c' + (i - presetCount);
+    const spec = l.hp ? `${fmt(l.hp,1)} hp motor · ${fmt(loadKw(l),1)} kW run` : `${fmt(l.kw,1)} kW`;
+    return `<div class="load-row${l.qty > 0 ? ' on' : ''}">
+      <span class="load-ico" aria-hidden="true">${l.icon}</span>
+      <div><div class="load-name">${esc(l.label)}</div><div class="load-spec">${spec}</div></div>
+      <div class="qty">
+        <button type="button" data-key="${key}" data-step="-1" aria-label="Fewer ${esc(l.label)}">−</button>
+        <output aria-label="Quantity">${l.qty}</output>
+        <button type="button" data-key="${key}" data-step="1" aria-label="More ${esc(l.label)}">+</button>
+      </div></div>`;
+  }).join('');
+}
+
+function renderResult(kw, lg, band, calc){
+  $('resLbl').firstChild.textContent = state.mode === 'build' ? 'Recommended generator ' : 'Selected size ';
+  $('resBand').textContent = band.name;
+  const over = calc && !calc.size;
+  $('resSize').innerHTML = calc && calc.runKw === 0 ? '—' : `${over ? '>' : ''}${fmt(kw)}<small>kW</small>`;
+  $('resKva').textContent = calc && calc.runKw === 0 ? 'Add loads to size a generator' :
+    `${fmt(kw / PF)} kVA @ 0.8 PF${over ? ' · exceeds single-unit range, so parallel multiple sets' : ''}`;
+  const rating = calc ? calc.duty.charAt(0).toUpperCase() + calc.duty.slice(1) + ' rating' : lg.rating;
+  $('mbSize').textContent = calc && calc.runKw === 0 ? '—' : (over ? '>' : '') + fmt(kw) + ' kW';
+  $('mbNote').textContent = calc && calc.runKw > 0 ? 'load factor ' + fmt(calc.runKw / kw * 100) + '%' : (calc ? 'add loads' : rating);
+  $('resRating').textContent = rating;
+
+  const mark = $('lfMark'), note = $('lfNote');
+  if(calc && calc.runKw > 0){
+    const lf = calc.runKw / kw;
+    $('lfVal').textContent = fmt(lf * 100) + '%';
+    mark.style.left = Math.min(100, lf * 100) + '%';
+    mark.parentElement.parentElement.style.opacity = 1;
+    note.textContent = lf < 0.3 ? 'Running load is under 30% of rating. Diesel engines will wet-stack. Reduce starting kVA (soft starter/VFD) or add a load bank.'
+      : lf < 0.5 ? 'Light running load, usually forced by motor starting. Check the VFD/soft-starter comparison below.'
+      : lf <= 0.8 ? 'Healthy: the engine runs in its efficient range with headroom for growth.'
+      : 'Tight. Little headroom for growth or load steps.';
+  } else {
+    $('lfVal').textContent = state.mode === 'quick' ? 'n/a' : '—';
+    mark.style.left = '0%';
+    mark.parentElement.parentElement.style.opacity = .45;
+    note.textContent = state.mode === 'quick' ? 'Switch to the load builder to calculate load factor from your actual equipment.' : '';
+  }
+}
+
+function renderBreakdown(calc){
+  $('bdCard').classList.toggle('hidden', !calc);
+  if(!calc) return;
+  const alt = sizeFor(state.start === 'vfd' ? 'dol' : 'vfd');
+  const largest = calc.largest ? `${fmt(calc.largest.hp,1)} hp ${esc(calc.largest.label.toLowerCase())}` : 'no motors';
+  $('bdGrid').innerHTML = [
+    ['Running load', fmt(calc.runKw,1) + ' kW', fmt(calc.runKva,1) + ' kVA'],
+    ['Largest motor start', fmt(calc.skva) + ' kVA', `${largest} · ${START_LABEL[state.start]}`],
+    ['Site derate', fmt(calc.der.f * 100) + '%', calc.der.f < 1 ? `altitude −${fmt(calc.der.altD*100,1)}% · heat −${fmt(calc.der.tmpD*100,1)}%` : 'no derate needed'],
+    ['Required', fmt(calc.reqKw) + ' kW', calc.governedBy === 'start' ? 'governed by motor starting' : `governed by running load (${Math.round(LOAD_TARGET[calc.duty]*100)}% target)`],
+  ].map(([k,v,s]) => `<div class="bd-item"><div class="bd-k">${k}</div><div class="bd-v">${v}</div><div class="bd-s">${s}</div></div>`).join('');
+
+  let f = `run: ${fmt(calc.runKw,1)} kW × ${1 + state.growth} growth ÷ ${LOAD_TARGET[calc.duty]} = ${fmt(calc.reqRunKw)} kW  |  start: (${fmt(calc.runKva,0)} − ${fmt(calc.largest ? loadKw(calc.largest)/PF : 0,0)} kVA) + ${fmt(calc.skva)} ÷ ${SURGE_K} = ${fmt(calc.reqStartKw/PF)} kVA → ${fmt(calc.reqStartKw)} kW  |  ÷ ${fmt(calc.der.f,2)} derate → ${calc.size ? fmt(calc.size) + ' kW standard size' : 'parallel sets'}`;
+  if(calc.largest && alt.size && alt.size !== calc.size){
+    const other = state.start === 'vfd' ? 'across-the-line' : 'VFD';
+    f += `<br>↳ with ${other} starting: <b style="color:${alt.size < calc.size ? 'var(--green)' : 'var(--red)'}">${fmt(alt.size)} kW</b> (load factor ${fmt(alt.lf*100)}%)`;
+  }
+  $('formula').innerHTML = f;
+}
+
+function renderEquipment(kw, calc){
+  const d = IND[state.industry];
+  if(calc){
+    $('eqLbl').textContent = 'Connected equipment';
+    const loads = allLoads();
+    $('eqGrid').innerHTML = loads.map(l => `
+      <div class="eq-item${l.qty > 0 ? ' on' : ''}"><span class="eq-icon" aria-hidden="true">${l.icon}</span>
+      <div class="eq-lbl">${esc(l.label)}${l.qty > 1 ? ' ×' + l.qty : ''}</div><div class="eq-kw">${fmt(loadKw(l) * Math.max(1,l.qty),1)} kW</div></div>`).join('');
+    return;
+  }
+  // quick mode: light loads cumulatively (smallest first) until 80% of rating
+  $('eqLbl').textContent = 'What this size can typically run (cumulative, ≤ 80% load)';
+  const budget = kw * 0.8;
+  const sorted = d.loads.map(l => ({...l, k: loadKw(l)})).sort((a,b) => a.k - b.k);
+  let used = 0; const onSet = new Set();
+  sorted.forEach(l => { if(used + l.k <= budget){ used += l.k; onSet.add(l.label); } });
+  $('eqGrid').innerHTML = d.loads.map(l => `
+    <div class="eq-item${onSet.has(l.label) ? ' on' : ''}"><span class="eq-icon" aria-hidden="true">${l.icon}</span>
+    <div class="eq-lbl">${esc(l.label)}</div><div class="eq-kw">${fmt(loadKw(l),1)} kW</div></div>`).join('');
+}
+
+function fuelBurn(kw, fuel){
+  const at75 = kw * 0.75;
+  const us = state.units === 'us';
+  if(/diesel|hvo|bi-fuel/i.test(fuel) || !/gas|propane|biogas/i.test(fuel)){
+    const lph = at75 * DIESEL_L_PER_KWH;
+    return {lbl:'Diesel @ 75% load', val: us ? `${fmt(lph/3.785,1)} gal/h · ${fmt(lph*24/3.785)} gal/day` : `${fmt(lph,1)} L/h · ${fmt(lph*24)} L/day`};
+  }
+  const m3h = at75 * NG_M3_PER_KWH;
+  return {lbl:'Gas @ 75% load', val: us ? `${fmt(m3h*35.31)} ft³/h` : `${fmt(m3h,1)} m³/h`};
+}
+
+function renderStats(kw, lg){
+  const fb = fuelBurn(kw, lg.fuel);
+  $('statsRow').innerHTML = [
+    {lbl:'Fuel type', val:lg.fuel, cls:'c-amber'},
+    {lbl:'Typical rating', val:lg.rating, cls:'c-blue'},
+    {lbl:'Mobility', val:lg.mobility, cls:'c-green'},
+    {lbl:fb.lbl, val:fb.val, cls:'c-yellow'},
+  ].map(s => `<div class="stat"><div class="stat-lbl">${s.lbl}</div><div class="stat-val ${s.cls}">${s.val}</div></div>`).join('');
+}
+
+function renderRecommendation(kw, lg, calc){
+  $('tagsArea').innerHTML = lg.tags.map(t => `<span class="tag ${t.c}">${t.t}</span>`).join('');
+  $('recText').textContent = lg.desc;
+
+  const alerts = [...lg.alerts];
+  if(calc && calc.runKw > 0){
+    if(calc.lf < 0.3 && /diesel|hvo/i.test(lg.fuel)) alerts.unshift({type:'a-warning',title:'Wet-stacking risk',text:`Running load is only ${fmt(calc.lf*100)}% of the recommended ${fmt(kw)} kW. Diesel engines below about 30% load build unburned fuel and carbon. Use soft starters/VFDs to cut starting kVA, sequence motor starts, or schedule load-bank exercise.`});
+    if(calc.der.f < 1) alerts.push({type:'a-info',title:'Site derating applied',text:`Altitude and ambient temperature reduce engine output to about ${fmt(calc.der.f*100)}% of nameplate. Confirm with the OEM's derate curve, since some engines hold rating higher than this rule of thumb.`});
+    if(!calc.size) alerts.unshift({type:'a-warning',title:'Beyond single-unit range',text:`Required capacity of about ${fmt(calc.reqKw)} kW exceeds the largest standard unit here. Design a paralleled system (e.g. ${Math.ceil(calc.reqKw/2000)+1} × 2,000 kW at N+1).`});
+    if(state.start === 'vfd' && !alerts.includes(AL.nonlinear)) alerts.push(AL.nonlinear);
+  }
+  $('alertsArea').innerHTML = alerts.length
+    ? alerts.map(a => `<div class="alert ${a.type}"><strong>${a.title}</strong>${a.text}</div>`).join('') : '';
+
+  const d = IND[state.industry];
+  $('tipBox').innerHTML = state.view === 'sales'
+    ? `<strong>Sales strategy</strong>${lg.tip}`
+    : `<strong>Questions to ask your supplier</strong><ul>${d.ask.map(q => `<li>${q}</li>`).join('')}</ul>`;
+
+  // summary text for copy
+  const lines = [`Generator sizing estimate: ${state.industry}`, `Recommended: ${calc && !calc.size ? '>' : ''}${fmt(kw)} kW / ${fmt(kw/PF)} kVA (${calc ? calc.duty : lg.rating})`];
+  if(calc){
+    lines.push(`Running load: ${fmt(calc.runKw,1)} kW · Largest motor start: ${fmt(calc.skva)} kVA (${START_LABEL[state.start]}) · Load factor: ${fmt(calc.lf*100)}%`);
+    lines.push(`Site: ${state.alt} ${state.units==='us'?'ft':'m'}, ${state.amb}${state.units==='us'?'°F':'°C'} · Derate ${fmt(calc.der.f*100)}% · Growth ${state.growth*100}%`);
+    lines.push('Loads: ' + calc.loads.map(l => `${l.qty}× ${l.label}`).join(', '));
+  }
+  lines.push(`Fuel: ${lg.fuel} · Mobility: ${lg.mobility}`);
+  lines.push(`Key notes: ${alerts.map(a => a.title).join('; ') || 'none'}`);
+  lines.push(`Estimate only. Verify with a licensed engineer and OEM sizing software.`, `Calculator by zov911 · ${location.href}`);
+  lastSummary = lines.join('\n');
+}
+
+async function copySummary(e){
+  const btn = e.currentTarget;
+  try { await navigator.clipboard.writeText(lastSummary); btn.textContent = '✓ Copied'; }
+  catch(err){ btn.textContent = 'Copy failed'; }
+  setTimeout(() => btn.textContent = '📋 Copy summary', 1800);
+}
+
+/* ═══════════════════ SHAREABLE STATE ═══════════════════ */
+function writeHash(){
+  const p = new URLSearchParams();
+  p.set('i', Object.keys(IND).indexOf(state.industry));
+  p.set('m', state.mode);
+  if(state.mode === 'quick') p.set('s', SIZES[state.idx]);
+  else {
+    p.set('q', Object.entries(state.qty).filter(([,v]) => v > 0).map(([k,v]) => `${k}.${v}`).join('_'));
+    if(state.custom.length) p.set('c', state.custom.map(c => [c.label, c.hp ? 'h' + c.hp : 'k' + c.kw, c.qty].join('~')).join('|'));
+    p.set('a', state.alt); p.set('t', state.amb); p.set('g', state.growth); p.set('d', state.duty); p.set('st', state.start);
+  }
+  if(state.view !== 'buyer') p.set('v', state.view);
+  if(state.units !== 'metric') p.set('u', state.units);
+  try { history.replaceState(null, '', '#' + p.toString()); } catch(e) {}
+}
+
+function readHash(){
+  const p = new URLSearchParams(location.hash.slice(1));
+  if(!p.has('i')) return;
+  const names = Object.keys(IND);
+  state.industry = names[+p.get('i')] || state.industry;
+  state.mode = p.get('m') === 'quick' ? 'quick' : 'build';
+  const s = SIZES.indexOf(+p.get('s')); if(s >= 0) state.idx = s;
+  if(p.has('q')){
+    state.qty = {};
+    IND[state.industry].loads.forEach((l,i) => state.qty[i] = 0);
+    (p.get('q') || '').split('_').filter(Boolean).forEach(x => { const [k,v] = x.split('.'); state.qty[k] = Math.min(99, +v || 0); });
+  }
+  if(p.has('c')) state.custom = p.get('c').split('|').map(x => {
+    const [label, val, qty] = x.split('~');
+    const n = parseFloat(val.slice(1)) || 0;
+    return val[0] === 'h' ? {icon:'⚙️',label,hp:n,qty:+qty||1,custom:true} : {icon:'🔌',label,kw:n,qty:+qty||1,custom:true};
+  }).filter(c => (c.hp || c.kw) > 0);
+  if(p.has('a')) state.alt = +p.get('a') || 0;
+  if(p.has('t')) state.amb = +p.get('t');
+  if(p.has('g')) state.growth = +p.get('g') || 0;
+  if(['auto','standby','prime','continuous'].includes(p.get('d'))) state.duty = p.get('d');
+  if(START_KVA_PER_HP[p.get('st')]) state.start = p.get('st');
+  if(p.get('v') === 'sales') state.view = 'sales';
+  if(p.get('u') === 'us') state.units = 'us';
 }
 
 init();
