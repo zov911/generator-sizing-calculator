@@ -12,7 +12,7 @@ An interactive generator sizing tool for standby, prime and continuous power. Bu
 - **Load-factor gauge** with wet-stacking warning (diesel engines below ~30% load)
 - **Fuel burn estimates** for diesel and natural gas, in metric or US units
 - **12 industries:** Agricultural, Commercial, Construction & Events, Data Center (incl. AI racks), Forestry, Greenhouses / CEA, Healthcare, Industrial, Mining, Municipal & Emergency, Oil & Gas, Water / Wastewater
-- **2026 guidance:** EPA Tier 4 Final vs emergency-standby rules, NFPA 110 Level 1 / Type 10, NFPA 99, CSA C282, NEC 700/701/702/517, HVO renewable diesel, battery-hybrid gensets, and 1 MW+ lead times driven by data-center demand
+- **Up-to-date guidance:** EPA Tier 4 Final vs emergency-standby rules, NFPA 110 Level 1 / Type 10, NFPA 99, CSA C282, NEC 700/701/702/517, HVO renewable diesel, battery-hybrid gensets, and 1 MW+ lead times driven by data-center demand
 - **Buyer view / Sales view:** works as a public lead-gen tool ("questions to ask your supplier") or as an internal sales-enablement tool ("sales strategy")
 - **Quick estimate mode:** slide through standard sizes from 10 kW to 3 MW
 - Copy summary, shareable links (full state in the URL), print/PDF, and a mobile layout
@@ -40,4 +40,4 @@ I build custom, on-brand sizing tools and configurators for power-generation dea
 
 **Reach out → [zov911.com](https://zov911.com)**
 
-© 2026 zov911. All rights reserved.
+© zov911. All rights reserved.
