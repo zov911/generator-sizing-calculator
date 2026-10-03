@@ -1,6 +1,6 @@
 # Generator Sizing Calculator: Industrial & Commercial Power
 
-**Live demo:** https://zov911.github.io/tt-generator-calculator/
+**Live demo:** https://zov911.github.io/generator-sizing-calculator/
 
 An interactive generator sizing tool for standby, prime and continuous power. Build a load list, account for motor starting and site conditions, and get a recommended standard genset size with industry-specific guidance on codes, fuel, emissions and common pitfalls.
 
